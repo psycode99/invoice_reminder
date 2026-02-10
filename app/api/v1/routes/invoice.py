@@ -2,6 +2,9 @@ from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
+from fastapi_pagination import Page, Params
+from fastapi_pagination.ext.sqlalchemy import paginate
+
 
 from app.api.v1.dependencies import get_db
 from app.core.security import get_current_user_dependency
@@ -28,16 +31,20 @@ def create_invoice(
 ):
     business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
     return invoice_service.create_invoice(
-        invoice_data=invoice_data.model_dump(mode="json"), business_id=business_id, db=db
+        invoice_data=invoice_data.model_dump(mode="json"),
+        business_id=business_id,
+        db=db,
     )
+
 
 @router.get(
     "/{business_id}/search",
     status_code=status.HTTP_200_OK,
-    response_model=List[InvoiceResponse],
+    response_model=Page[InvoiceResponse],
 )
 def search_invoice(
     business_id: UUID,
+    params: Params = Depends(),
     invoice_number: Optional[str] = Query(None, description="Invoice number to search"),
     customer_name: Optional[str] = Query(None, description="Customer name to search"),
     customer_email: Optional[str] = Query(None, description="Customer email to search"),
@@ -48,7 +55,7 @@ def search_invoice(
 
     business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
 
-    return invoice_service.search_invoice(
+    query = invoice_service.search_invoice(
         invoice_number=invoice_number,
         customer_name=customer_name,
         customer_email=customer_email,
@@ -57,6 +64,7 @@ def search_invoice(
         db=db,
     )
 
+    return paginate(query, params)
 
 
 @router.get(
@@ -77,15 +85,17 @@ def get_invoice(
 @router.get(
     "/{business_id}",
     status_code=status.HTTP_200_OK,
-    response_model=List[InvoiceResponse],
+    response_model=Page[InvoiceResponse],
 )
 def get_invoices(
     business_id: UUID,
+    params: Params = Depends(),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
 ):
     business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
-    return invoice_service.get_invoices_for_business(business_id=business_id, db=db)
+    query = invoice_service.get_invoices_for_business(business_id=business_id, db=db)
+    return paginate(query, params)
 
 
 @router.put(
@@ -102,7 +112,10 @@ def update_invoice(
 ):
     business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
     return invoice_service.update_invoice(
-        id=invoice_id, business_id=business_id, db=db, invoice_data=invoice_data.model_dump(exclude_unset=True, mode="json")
+        id=invoice_id,
+        business_id=business_id,
+        db=db,
+        invoice_data=invoice_data.model_dump(exclude_unset=True, mode="json"),
     )
 
 

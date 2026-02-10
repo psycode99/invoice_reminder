@@ -6,6 +6,8 @@ from app.schemas.business_schema import BusinessCreate, BusinessResponse, Busine
 from sqlalchemy.orm import Session
 from app.core.security import get_current_user_dependency
 from app.services.business_service import BusinessService
+from fastapi_pagination import Page, Params
+from fastapi_pagination.ext.sqlalchemy import paginate
 
 
 router = APIRouter(prefix="/v1/businesses", tags=["Business"])
@@ -19,7 +21,9 @@ def create_business(
     current_user=Depends(get_current_user_dependency),
 ):
     return business_service.create_business(
-        db=db, business_data=business_data.model_dump(mode="json"), owner_id=current_user.id
+        db=db,
+        business_data=business_data.model_dump(mode="json"),
+        owner_id=current_user.id,
     )
 
 
@@ -33,11 +37,14 @@ def get_business(
     return business_service.get_business(id=id, db=db, owner_id=current_user.id)
 
 
-@router.get("/", status_code=status.HTTP_200_OK, response_model=List[BusinessResponse])
+@router.get("/", status_code=status.HTTP_200_OK, response_model=Page[BusinessResponse])
 def get_businesses(
-    db: Session = Depends(get_db), current_user=Depends(get_current_user_dependency)
+    params: Params = Depends(),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_dependency),
 ):
-    return business_service.get_businesses(owner_id=current_user.id, db=db)
+    query = business_service.get_businesses(owner_id=current_user.id, db=db)
+    return paginate(query, params)
 
 
 @router.put("/{id}", status_code=status.HTTP_200_OK, response_model=BusinessResponse)
@@ -48,7 +55,10 @@ def update_business(
     current_user=Depends(get_current_user_dependency),
 ):
     return business_service.update_business(
-        id=id, owner_id=current_user.id, db=db, business_data=business_data.model_dump(exclude_unset=True, mode="json")
+        id=id,
+        owner_id=current_user.id,
+        db=db,
+        business_data=business_data.model_dump(exclude_unset=True, mode="json"),
     )
 
 

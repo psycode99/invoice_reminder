@@ -26,7 +26,11 @@ class BusinessService:
         return business
 
     def get_businesses(self, owner_id: UUID, db: Session):
-        businesses = db.query(Business).filter_by(owner_id=owner_id).all()
+        businesses = (
+            db.query(Business)
+            .filter(Business.owner_id == owner_id)
+            .order_by(Business.created_at.desc())
+        )
         if not businesses:
             raise HTTPException(
                 status_code=status.HTTP_204_NO_CONTENT, detail=NO_BUSINESSES_FOUND
@@ -36,7 +40,11 @@ class BusinessService:
     def update_business(
         self, id: UUID, owner_id: UUID, db: Session, business_data: dict
     ):
-        business = db.query(Business).filter(Business.id==id, Business.owner_id==owner_id).first()
+        business = (
+            db.query(Business)
+            .filter(Business.id == id, Business.owner_id == owner_id)
+            .first()
+        )
         if not business:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=BUSINESS_NOT_FOUND
@@ -50,7 +58,11 @@ class BusinessService:
         return business
 
     def delete_business(self, id: UUID, owner_id: UUID, db: Session):
-        business = db.query(Business).filter(Business.id==id, Business.owner_id==owner_id).first()
+        business = (
+            db.query(Business)
+            .filter(Business.id == id, Business.owner_id == owner_id)
+            .first()
+        )
         if not business:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=BUSINESS_NOT_FOUND
