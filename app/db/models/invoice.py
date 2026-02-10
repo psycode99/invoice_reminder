@@ -29,7 +29,7 @@ class Invoice(Base):
     )
 
     invoice_number: Mapped[str] = mapped_column(String(100))
-    status: Mapped[str] = mapped_column(String(50))  # draft, sent, cancelled
+    status: Mapped[str] = mapped_column(String(50), default="pending")  # draft, sent, cancelled
 
     currency: Mapped[str] = mapped_column(String(3))
 
@@ -46,7 +46,8 @@ class Invoice(Base):
     paid_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True))
 
     payment_status: Mapped[str] = mapped_column(
-        String(50)
+        String(50),
+        default="unpaid"
     )  # unpaid, paid, overdue, partial
     payment_method: Mapped[str | None] = mapped_column(String(50))
 
