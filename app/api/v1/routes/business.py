@@ -19,7 +19,7 @@ def create_business(
     current_user=Depends(get_current_user_dependency),
 ):
     return business_service.create_business(
-        db=db, business_data=business_data.model_dump(), owner_id=current_user.id
+        db=db, business_data=business_data.model_dump(mode="json"), owner_id=current_user.id
     )
 
 
@@ -48,7 +48,7 @@ def update_business(
     current_user=Depends(get_current_user_dependency),
 ):
     return business_service.update_business(
-        id=id, owner_id=current_user.id, db=db, business_data=business_data.model_dump(exclude_unset=True)
+        id=id, owner_id=current_user.id, db=db, business_data=business_data.model_dump(exclude_unset=True, mode="json")
     )
 
 

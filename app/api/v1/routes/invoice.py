@@ -28,8 +28,35 @@ def create_invoice(
 ):
     business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
     return invoice_service.create_invoice(
-        invoice_data=invoice_data.model_dump(), business_id=business_id, db=db
+        invoice_data=invoice_data.model_dump(mode="json"), business_id=business_id, db=db
     )
+
+@router.get(
+    "/{business_id}/search",
+    status_code=status.HTTP_200_OK,
+    response_model=List[InvoiceResponse],
+)
+def search_invoice(
+    business_id: UUID,
+    invoice_number: Optional[str] = Query(None, description="Invoice number to search"),
+    customer_name: Optional[str] = Query(None, description="Customer name to search"),
+    customer_email: Optional[str] = Query(None, description="Customer email to search"),
+    issue_date: Optional[str] = Query(None, description="Issue date YYYY-MM-DD"),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_dependency),
+):
+
+    business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
+
+    return invoice_service.search_invoice(
+        invoice_number=invoice_number,
+        customer_name=customer_name,
+        customer_email=customer_email,
+        issue_date=issue_date,
+        business_id=business_id,
+        db=db,
+    )
+
 
 
 @router.get(
@@ -61,33 +88,6 @@ def get_invoices(
     return invoice_service.get_invoices_for_business(business_id=business_id, db=db)
 
 
-@router.get(
-    "/{business_id}/search",
-    status_code=status.HTTP_200_OK,
-    response_model=List[InvoiceResponse],
-)
-def search_invoice(
-    business_id: UUID,
-    invoice_number: Optional[str] = Query(None, description="Invoice number to search"),
-    customer_name: Optional[str] = Query(None, description="Customer name to search"),
-    customer_email: Optional[str] = Query(None, description="Customer email to search"),
-    issue_date: Optional[str] = Query(None, description="Issue date YYYY-MM-DD"),
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user_dependency),
-):
-
-    business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
-
-    return invoice_service.search_invoice(
-        invoice_number=invoice_number,
-        customer_name=customer_name,
-        customer_email=customer_email,
-        issue_date=issue_date,
-        business_id=business_id,
-        db=db,
-    )
-
-
 @router.put(
     "/{business_id}/{invoice_id}",
     status_code=status.HTTP_200_OK,
@@ -102,7 +102,7 @@ def update_invoice(
 ):
     business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
     return invoice_service.update_invoice(
-        id=invoice_id, business_id=business_id, db=db, invoice_data=invoice_data.model_dump(exclude_unset=True)
+        id=invoice_id, business_id=business_id, db=db, invoice_data=invoice_data.model_dump(exclude_unset=True, mode="json")
     )
 
 

@@ -12,6 +12,7 @@ class InvoiceService:
         db.add(invoice)
         db.commit()
         db.refresh(invoice)
+        return invoice
 
     def get_invoice(self, id: UUID, business_id: UUID, db: Session):
         invoice = db.query(Invoice).filter_by(id=id, business_id=business_id).first()
@@ -57,7 +58,7 @@ class InvoiceService:
     def update_invoice(
         self, id: UUID, business_id: UUID, db: Session, invoice_data: dict
     ):
-        invoice = db.query(Invoice).filter(id=id, business_id=business_id).first()
+        invoice = db.query(Invoice).filter(Invoice.id==id, Invoice.business_id==business_id).first()
         if not invoice:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=INVOICE_NOT_FOUND
@@ -71,7 +72,7 @@ class InvoiceService:
         return invoice
 
     def delete_invoice(self, id: UUID, business_id: UUID, db: Session):
-        invoice = db.query(Invoice).filter(id=id, business_id=business_id).first()
+        invoice = db.query(Invoice).filter(Invoice.id==id, Invoice.business_id==business_id).first()
         if not invoice:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=INVOICE_NOT_FOUND
