@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 
+
 class User(Base):
     __tablename__ = "users"
 
@@ -45,8 +46,7 @@ class User(Base):
     last_login_at: Mapped[DateTime | None] = mapped_column(
         DateTime(timezone=True)
     )
-
-    # businesses: Mapped[list["Business"]] = relationship(
-    #     back_populates="owner",
-    #     cascade="all, delete-orphan",
-    # )
+    businesses: Mapped[list["Business"]] = relationship( # type: ignore
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
