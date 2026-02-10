@@ -2,6 +2,10 @@ from fastapi import FastAPI
 from app.api.v1.routes import auth, user, business, invoice
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi_pagination import add_pagination
+from app.core.logging import LOGGING_CONFIG
+from logging.config import dictConfig
+
+dictConfig(LOGGING_CONFIG)
 
 app = FastAPI()
 
