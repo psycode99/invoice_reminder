@@ -4,7 +4,6 @@ from datetime import date, datetime
 
 
 class InvoiceCreate(BaseModel):
-    business_id: UUID
 
     invoice_number: str
     currency: str
