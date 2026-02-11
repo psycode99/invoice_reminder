@@ -1,46 +1,47 @@
 from typing import Optional
 from uuid import UUID
 from app.core.messages import INVOICE_NOT_FOUND, NO_INVOICES_FOUND
-from app.db.models import Invoice, business
+from app.db.models import Invoice
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, Response, status
-import logging
-
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
 class InvoiceService:
     def create_invoice(self, invoice_data: dict, business_id: UUID, db: Session):
         logger.info(
-            msg="Creating Invoice",
-            extra={
-                "invoice_number": invoice_data.get("invoice_number"),
-                "business_id": str(business_id),
-            },
+            "Creating Invoice",
+            invoice_number=invoice_data.get("invoice_number"),
+            business_id=str(business_id),
         )
         invoice = Invoice(**invoice_data, business_id=business_id)
         db.add(invoice)
         db.commit()
         db.refresh(invoice)
-        logger.info(msg="Invoice Created", extra={"invoice_id": str(invoice.id)})
+        logger.info("Invoice Created", invoice_id=str(invoice.id))
         return invoice
 
     def get_invoice(self, id: UUID, business_id: UUID, db: Session):
         logger.info(
-            msg="Fetching Invoice",
-            extra={"invoice_id": str(id), "business_id": str(business_id)},
+            "Fetching Invoice",
+            invoice_id=str(id),
+            business_id=str(business_id),
         )
 
         invoice = db.query(Invoice).filter_by(id=id, business_id=business_id).first()
         if not invoice:
-            logger.warning(msg="Invoices not Found", extra={"invoice_id": str(id), F"business_id": str(business_id)})
+            logger.warning(
+                "Invoices not Found",
+                invoice_id=str(id),
+                business_id=str(business_id),
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=INVOICE_NOT_FOUND
             )
         return invoice
 
     def get_invoices_for_business(self, business_id: UUID, db: Session):
-        logger.info(msg="Fetching Invoices", extra={"business_id": str(business_id)})
+        logger.info("Fetching Invoices", business_id=str(business_id))
 
         invoices = (
             db.query(Invoice)
@@ -48,7 +49,7 @@ class InvoiceService:
             .order_by(Invoice.created_at.desc())
         )
         if not invoices:
-            logger.warning(msg="Invoices not Found", extra={"business_id": str(business_id)})
+            logger.warning("Invoices not Found", business_id=str(business_id))
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=NO_INVOICES_FOUND
             )
@@ -63,7 +64,7 @@ class InvoiceService:
         customer_email: Optional[str] = None,
         issue_date: Optional[str] = None,
     ):
-        logger.info(msg="Searching Invoices", extra={"business_id": str(business_id)})
+        logger.info("Searching Invoices", business_id=str(business_id))
         query = db.query(Invoice).filter(Invoice.business_id == business_id)
 
         if invoice_number:
@@ -77,21 +78,29 @@ class InvoiceService:
 
         result = query.all()
         if not result:
-            logger.warning(msg="Invoices not Found", extra={"business_id": str(business_id)})
+            logger.warning("Invoices not Found", business_id=str(business_id))
             raise HTTPException(status_code=404, detail="No invoices found")
         return query
 
     def update_invoice(
         self, id: UUID, business_id: UUID, db: Session, invoice_data: dict
     ):
-        logger.info(msg="Updating invoice", extra={"invoice_id": str(id), "business_id": str(business_id)})
+        logger.info(
+            "Updating invoice",
+            invoice_id=str(id),
+            business_id=str(business_id),
+        )
         invoice = (
             db.query(Invoice)
             .filter(Invoice.id == id, Invoice.business_id == business_id)
             .first()
         )
         if not invoice:
-            logger.warning(msg="Invoice not Found", extra={"invoice_id": str(id), "business_id": str(business_id)})
+            logger.warning(
+                "Invoice not Found",
+                invoice_id=str(id),
+                business_id=str(business_id),
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=INVOICE_NOT_FOUND
             )
@@ -101,22 +110,38 @@ class InvoiceService:
 
         db.commit()
         db.refresh(invoice)
-        logger.info(msg="Invoice Updated", extra={"invoice_id": str(invoice.id), "business_id": str(business_id)})
+        logger.info(
+            "Invoice Updated",
+            invoice_id=str(invoice.id),
+            business_id=str(business_id),
+        )
         return invoice
 
     def delete_invoice(self, id: UUID, business_id: UUID, db: Session):
-        logger.info(msg="Deleting Invoice", extra={"invoice_id": str(id), "business_id": str(business_id)})
+        logger.info(
+            "Deleting Invoice",
+            invoice_id=str(id),
+            business_id=str(business_id),
+        )
         invoice = (
             db.query(Invoice)
             .filter(Invoice.id == id, Invoice.business_id == business_id)
             .first()
         )
         if not invoice:
-            logger.warning(msg="Invoice not Found", extra={"invoice_id": str(id), "business_id": str(business_id)})
+            logger.warning(
+                "Invoice not Found",
+                invoice_id=str(id),
+                business_id=str(business_id),
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=INVOICE_NOT_FOUND
             )
         db.delete(invoice)
         db.commit()
-        logger.info(msg="Invoice Deleted", extra={"invoice_id": str(id), "business_id": str(business_id)})
+        logger.info(
+            "Invoice Deleted",
+            invoice_id=str(id),
+            business_id=str(business_id),
+        )
         return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -1,15 +1,15 @@
+from app.middleware.logging_middleware import logging_middleware
 from fastapi import FastAPI
 from app.api.v1.routes import auth, user, business, invoice
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi_pagination import add_pagination
-from app.core.logging import LOGGING_CONFIG
-from logging.config import dictConfig
+from app.core.logging import setup_logger
 
-dictConfig(LOGGING_CONFIG)
+
+logger = setup_logger()
 
 app = FastAPI()
-
-
+app.middleware("http")(logging_middleware)
 app.add_middleware(SessionMiddleware, secret_key="seom-key")
 
 

@@ -4,6 +4,7 @@ from app.core.security import create_access_token, decode_jwt
 from app.services.oauth.base import OauthProvider
 from app.db.models.users import User
 from sqlalchemy.orm import Session
+from loguru import logger
 
 
 class AuthService:
@@ -11,6 +12,8 @@ class AuthService:
         self.providers = providers
 
     async def login_redirect(self, provider_name: str, request: Request):
+        logger.info("Logging in User", provider_name=provider_name)
+
         provider = self.providers.get(provider_name)
         redirect_uri = request.url_for("oauth_callback", provider=provider_name)
         return await provider.get_auth_url(request=request, redirect_uri=redirect_uri)
@@ -33,7 +36,10 @@ class AuthService:
             db.add(user)
             db.commit()
             db.refresh(user)
+            logger.info("New User Created", user_id=str(user.id))
+
         access_token = create_access_token(user.id)
+        logger.info("User Logged In", user_id=str(user.id))
         return {"access_token": access_token, "type": "bearer"}
 
     def get_current_user(self, token, db: Session):
@@ -41,6 +47,7 @@ class AuthService:
         user_id = str(payload.get("sub"))
         user = db.query(User).filter_by(id=user_id).first()
         if not user:
+            logger.warning("User Not Found", user_id=str(user_id))
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User Not Found"
             )

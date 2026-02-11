@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+from uuid import UUID
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException, status
 from app.core.config import settings
@@ -10,7 +11,7 @@ from jwt import (
     InvalidTokenError,
 )
 
-
+from loguru import logger
 from app.api.v1.dependencies import get_db
 from app.services.oauth.google import GoogleProvider
 
@@ -19,34 +20,38 @@ ALGORITHM = settings.algorithm
 EXPIRATION_MINUTES = settings.expiration_minutes
 
 
-def create_access_token(id: str):
+def create_access_token(id: UUID):
+    logger.info("Creating JWT", user_id=str(id))
+
     expires_in = datetime.now(timezone.utc) + timedelta(minutes=EXPIRATION_MINUTES)
     to_encode = {"exp": expires_in, "sub": str(id)}
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, ALGORITHM)
+
+    logger.info("JWT Created", user_id=str(id))
     return encoded_jwt
 
 
-def decode_jwt(encoded_jwt: dict) -> dict:
+def decode_jwt(encoded_jwt: str) -> dict:
     try:
         decoded_jwt = jwt.decode(encoded_jwt, SECRET_KEY, algorithms=[ALGORITHM])
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token"
-        )
     except ExpiredSignatureError:
+        logger.exception("Token Has Expired")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has Expired"
         )
     except InvalidTokenError:
+        logger.exception("Invalid Token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token"
         )
     except InvalidSignatureError:
+        logger.exception("Invalid Token Signature")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Signature on Token",
         )
     except DecodeError:
+        logger.exception("Error Decoding Token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Error Decoding Token"
         )
