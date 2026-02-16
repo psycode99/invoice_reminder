@@ -1,5 +1,7 @@
 import uuid
 from sqlalchemy import (
+    Boolean,
+    Integer,
     String,
     Date,
     DateTime,
@@ -29,7 +31,9 @@ class Invoice(Base):
     )
 
     invoice_number: Mapped[str] = mapped_column(String(100))
-    status: Mapped[str] = mapped_column(String(50), default="pending")  # draft, sent, cancelled
+    status: Mapped[str] = mapped_column(
+        String(50), default="pending"
+    )  # draft, sent, cancelled
 
     currency: Mapped[str] = mapped_column(String(3))
 
@@ -46,8 +50,7 @@ class Invoice(Base):
     paid_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True))
 
     payment_status: Mapped[str] = mapped_column(
-        String(50),
-        default="unpaid"
+        String(50), default="unpaid"
     )  # unpaid, paid, overdue, partial
     payment_method: Mapped[str | None] = mapped_column(String(50))
 
@@ -61,5 +64,21 @@ class Invoice(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+    reminder_count: Mapped[int] = mapped_column(Integer, default=0)
 
-    business: Mapped["Business"] = relationship(back_populates="invoices") # type: ignore
+    last_reminder_at: Mapped[DateTime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    next_reminder_at: Mapped[DateTime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    reminders_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+    )
+
+    business: Mapped["Business"] = relationship(back_populates="invoices")  # type: ignore
