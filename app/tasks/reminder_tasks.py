@@ -27,8 +27,10 @@ def send_invoice_issued_task(self, invoice_id: UUID):
         invoice = db.execute(stmt).scalar_one()
 
         subject, msg = build_invoice_email(invoice=invoice, escalation="issued")
+        logger_task = logger.bind(invoice_id=str(invoice.id))
 
         if settings.prod:
+            logger_task.info("Sending invoice Issued")
             send_email(
                 to_addr=invoice.customer_email,
                 from_addr=settings.from_email_addr,
@@ -38,9 +40,7 @@ def send_invoice_issued_task(self, invoice_id: UUID):
                 type="issued"
             )
         else:
-            logger_task = logger.bind(invoice_id=str(invoice.id))
             logger_task.info("Sending invoice Issued")
-
             send_email_dev(
                 to_addr=invoice.customer_email,
                 from_addr=settings.smtp_email,
@@ -90,7 +90,10 @@ def send_invoice_reminder_task(self, invoice_id: UUID):
 
         subject, msg = build_invoice_email(invoice=invoice, escalation=escalation)
 
+        logger_task = logger.bind(invoice_id=str(invoice.id))
+
         if settings.prod:
+            logger_task.info("Sending invoice Issued")
             send_email(
                 to_addr=invoice.customer_email,
                 from_addr=settings.from_email_addr,
@@ -100,6 +103,7 @@ def send_invoice_reminder_task(self, invoice_id: UUID):
                 type="issued"
             )
         else:
+            logger_task.info("Sending invoice Issued")
             send_email_dev(
                 to_addr=invoice.customer_email,
                 from_addr=settings.smtp_email,
