@@ -46,7 +46,7 @@ class Invoice(Base):
     total_amount: Mapped[float] = mapped_column(Numeric(12, 2))
 
     issue_date: Mapped[Date] = mapped_column(Date)
-    due_date: Mapped[Date] = mapped_column(Date)
+    due_date: Mapped[Date] = mapped_column(Date, nullable=False)
     paid_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True))
 
     payment_status: Mapped[str] = mapped_column(
@@ -73,7 +73,7 @@ class Invoice(Base):
 
     next_reminder_at: Mapped[DateTime | None] = mapped_column(
         DateTime(timezone=True),
-        nullable=True,
+        nullable=False,
     )
 
     reminders_enabled: Mapped[bool] = mapped_column(

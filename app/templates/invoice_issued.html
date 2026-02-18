@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <body style="margin:0; padding:0; background-color:#f4f6f8; font-family: Arial, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
+      <tr>
+        <td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; padding:40px; box-shadow:0 6px 18px rgba(0,0,0,0.08);">
+
+            <tr>
+              <td>
+                <h2 style="margin-top:0; color:#2d3748;">New Invoice Issued</h2>
+
+                <p style="font-size:16px; color:#4a5568;">
+                  Hi {{ customer_name }},
+                </p>
+
+                <p style="font-size:16px; color:#4a5568; line-height:1.6;">
+                  A new invoice has been issued to you. Please find the details below.
+                </p>
+
+                <table width="100%" style="margin:25px 0; font-size:15px; color:#2d3748;">
+                  <tr>
+                    <td><strong>Invoice #</strong></td>
+                    <td align="right">{{ invoice_number }}</td>
+                  </tr>
+                  <tr>
+                    <td>Issue Date</td>
+                    <td align="right">{{ issue_date }}</td>
+                  </tr>
+                  <tr>
+                    <td>Due Date</td>
+                    <td align="right" style="font-weight:bold;">{{ due_date }}</td>
+                  </tr>
+                  <tr>
+                    <td>Subtotal</td>
+                    <td align="right">{{ currency }} {{ subtotal }}</td>
+                  </tr>
+                  <tr>
+                    <td>Tax</td>
+                    <td align="right">{{ currency }} {{ tax }}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding-top:10px; font-weight:bold;">Total</td>
+                    <td align="right" style="padding-top:10px; font-weight:bold; font-size:16px;">
+                      {{ currency }} {{ total }}
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="font-size:15px; color:#4a5568;">
+                  Kindly ensure payment is made by the due date to avoid any delays or reminders.
+                </p>
+
+                <div style="margin-top:30px; padding:20px; background:#edf2f7; border-radius:6px;">
+                  <p style="margin:0; font-size:14px; color:#4a5568;">
+                    If you have any questions regarding this invoice, please contact us at:
+                  </p>
+                  <p style="margin:5px 0 0; font-size:14px; font-weight:bold; color:#2d3748;">
+                    {{ business_email }}
+                  </p>
+                </div>
+
+                <p style="margin-top:40px; font-size:14px; color:#718096;">
+                  {{ business_name }}
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

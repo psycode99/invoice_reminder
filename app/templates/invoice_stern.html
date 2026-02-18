@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <body style="margin:0; padding:0; background-color:#fff5f5; font-family: Arial, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
+      <tr>
+        <td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; padding:40px; border-top:6px solid #c53030; box-shadow:0 6px 18px rgba(0,0,0,0.1);">
+
+            <tr>
+              <td>
+                <h2 style="margin-top:0; color:#c53030;">Urgent Payment Required</h2>
+
+                <p style="color:#2d3748; font-size:16px;">
+                  {{ customer_name }},
+                </p>
+
+                <p style="color:#2d3748; font-size:16px; line-height:1.6;">
+                  Despite previous reminders, invoice 
+                  <strong>#{{ invoice_number }}</strong> remains unpaid.
+                  Immediate payment is required.
+                </p>
+
+                <table width="100%" style="margin:25px 0; font-size:15px; color:#2d3748;">
+                  <tr>
+                    <td>Issue Date:</td>
+                    <td align="right">{{ issue_date }}</td>
+                  </tr>
+                  <tr>
+                    <td>Due Date:</td>
+                    <td align="right" style="color:#c53030; font-weight:bold;">
+                      {{ due_date }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding-top:10px; font-weight:bold;">Outstanding Amount:</td>
+                    <td align="right" style="padding-top:10px; font-weight:bold; color:#c53030;">
+                      {{ currency }} {{ total }}
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="color:#2d3748; font-size:15px;">
+                  Please arrange payment immediately to avoid further action.
+                  If payment has already been made, contact us with confirmation.
+                </p>
+
+                <p style="margin-top:40px; font-size:14px; color:#718096;">
+                  {{ business_name }}<br>
+                  {{ business_email }}
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     expiration_minutes: int
     algorithm: str
     resend_api_key: str
+    redis_url: str
+    redis_backend: str
+    from_email_addr: str
 
     class Config:
         env_file = ".env"

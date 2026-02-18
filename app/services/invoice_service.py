@@ -4,6 +4,7 @@ from app.core.messages import INVOICE_NOT_FOUND, NO_INVOICES_FOUND
 from app.db.models import Invoice
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, Response, status
+from app.tasks.reminder_tasks import send_invoice_issued_task
 from loguru import logger
 
 
@@ -14,11 +15,17 @@ class InvoiceService:
             invoice_number=invoice_data.get("invoice_number"),
             business_id=str(business_id),
         )
-        invoice = Invoice(**invoice_data, business_id=business_id)
+        next_reminder_at = invoice_data.get("due_date")
+        invoice = Invoice(
+            **invoice_data, business_id=business_id
+        )
+        invoice.next_reminder_at = next_reminder_at
         db.add(invoice)
         db.commit()
         db.refresh(invoice)
         logger.info("Invoice Created", invoice_id=str(invoice.id))
+
+        send_invoice_issued_task.delay(invoice.id)
         return invoice
 
     def get_invoice(self, id: UUID, business_id: UUID, db: Session):
