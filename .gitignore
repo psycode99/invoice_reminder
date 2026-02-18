@@ -3,3 +3,7 @@ __pycache__/
 venv/
 logs/
 *.log
+*.bak
+*.dat
+*.dir
+celerybeat-schedule*

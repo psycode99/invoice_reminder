@@ -1,5 +1,6 @@
 from uuid import UUID
-from sqlalchemy import or_, select
+from loguru import logger
+from sqlalchemy import select
 from app.core.constants import MAX_REMINDERS
 from app.db.models.invoice import Invoice
 from app.mail.build_mail import build_invoice_email
@@ -7,7 +8,7 @@ from app.mail.email_escalator import determine_escalation
 from app.core.reminder_calc import calculate_next_reminder
 from app.tasks.celery_app import celery_app
 from app.db.session import SessionLocal
-from app.mail.email_sender import send_email
+from app.mail.email_sender import send_email, send_email_dev
 from datetime import UTC, datetime
 from app.core.config import settings
 from sqlalchemy.orm import selectinload
@@ -27,14 +28,27 @@ def send_invoice_issued_task(self, invoice_id: UUID):
 
         subject, msg = build_invoice_email(invoice=invoice, escalation="issued")
 
-        send_email(
-            to_addr=invoice.customer_email,
-            from_addr=settings.from_email_addr,
-            subject=subject,
-            msg=msg,
-            invoice_id=invoice.id,
-            type="issued"
-        )
+        if settings.prod:
+            send_email(
+                to_addr=invoice.customer_email,
+                from_addr=settings.from_email_addr,
+                subject=subject,
+                msg=msg,
+                invoice_id=invoice.id,
+                type="issued"
+            )
+        else:
+            logger_task = logger.bind(invoice_id=str(invoice.id))
+            logger_task.info("Sending invoice Issued")
+
+            send_email_dev(
+                to_addr=invoice.customer_email,
+                from_addr=settings.smtp_email,
+                subject=subject,
+                msg=msg,
+                invoice_id=invoice.id,
+                type="issued"
+            )
         invoice.next_reminder_at = calculate_next_reminder(invoice)
 
         db.commit()
@@ -76,14 +90,24 @@ def send_invoice_reminder_task(self, invoice_id: UUID):
 
         subject, msg = build_invoice_email(invoice=invoice, escalation=escalation)
 
-        send_email(
-            to_addr=invoice.customer_email,
-            from_addr=settings.from_email_addr,
-            subject=subject,
-            msg=msg,
-            invoice_id=invoice.id,
-            type="reminder"
-        )
+        if settings.prod:
+            send_email(
+                to_addr=invoice.customer_email,
+                from_addr=settings.from_email_addr,
+                subject=subject,
+                msg=msg,
+                invoice_id=invoice.id,
+                type="issued"
+            )
+        else:
+            send_email_dev(
+                to_addr=invoice.customer_email,
+                from_addr=settings.smtp_email,
+                subject=subject,
+                msg=msg,
+                invoice_id=invoice.id,
+                type="issued"
+            )
 
         invoice.reminder_count += 1
         invoice.last_reminder_at = datetime.now(UTC)
