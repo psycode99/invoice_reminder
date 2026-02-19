@@ -1,5 +1,6 @@
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from app.db.models.invoice import Invoice
+from humanize import intcomma
 
 env = Environment(
     loader=FileSystemLoader("app/templates"),
@@ -16,13 +17,13 @@ def build_invoice_email(invoice: Invoice, escalation: str):
     }
 
     template = env.get_template(template_map[escalation])
-
+    
     context = {
-        "customer_name": invoice.customer_name,
+        "customer_name": invoice.customer_name.title(),
         "invoice_number": invoice.invoice_number,
-        "subtotal": invoice.subtotal_amount,
-        "tax": invoice.tax_amount,
-        "total": invoice.total_amount,
+        "subtotal": intcomma(invoice.subtotal_amount),
+        "tax": intcomma(invoice.tax_amount),
+        "total": intcomma(invoice.total_amount),
         "currency": invoice.currency,
         "issue_date": invoice.issue_date,
         "due_date": invoice.due_date,
