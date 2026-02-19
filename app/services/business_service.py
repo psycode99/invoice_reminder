@@ -19,11 +19,7 @@ class BusinessService:
     def get_business(self, id: UUID, db: Session, owner_id: UUID):
         logger.info("Fetching Business", business_id=str(id))
         business = db.query(Business).filter_by(id=id).first()
-        if not business:
-            logger.warning("Business Not Found", business_id=str(id))
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=BUSINESS_NOT_FOUND
-            )
+
         if business.owner_id != owner_id:
             logger.warning(
                 "User Unauthorized",
@@ -33,6 +29,13 @@ class BusinessService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail=USER_UNAUTHORIZED
             )
+    
+        if not business:
+            logger.warning("Business Not Found", business_id=str(id))
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=BUSINESS_NOT_FOUND
+            )
+ 
         return business
 
     def get_businesses(self, owner_id: UUID, db: Session):

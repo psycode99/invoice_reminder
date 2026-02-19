@@ -38,7 +38,7 @@ class InvoiceService:
         invoice = db.query(Invoice).filter_by(id=id, business_id=business_id).first()
         if not invoice:
             logger.warning(
-                "Invoices not Found",
+                "Invoice not Found",
                 invoice_id=str(id),
                 business_id=str(business_id),
             )

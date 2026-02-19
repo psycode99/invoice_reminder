@@ -1,5 +1,6 @@
 from datetime import datetime, timezone, timedelta
 from uuid import UUID
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException, status
 from app.core.config import settings
@@ -18,6 +19,8 @@ from app.services.oauth.google import GoogleProvider
 SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
 EXPIRATION_MINUTES = settings.expiration_minutes
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def create_access_token(id: UUID):
@@ -58,7 +61,7 @@ def decode_jwt(encoded_jwt: str) -> dict:
     return decoded_jwt
 
 
-def get_current_user_dependency(token, db: Session = Depends(get_db)):
+def get_current_user_dependency(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     from app.services.auth_service import AuthService
 
     auth_service = AuthService(providers={"google": GoogleProvider()})
