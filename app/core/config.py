@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     google_client_secret: str
     secret_key: str
     expiration_minutes: int
+    refresh_token_expiration_days: int
     algorithm: str
     resend_api_key: str
     redis_url: str

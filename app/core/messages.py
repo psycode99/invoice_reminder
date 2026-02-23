@@ -6,3 +6,5 @@ NO_BUSINESSES_FOUND = "No Businesses Found"
 
 INVOICE_NOT_FOUND = "Invoice Not Found"
 NO_INVOICES_FOUND = "No Invoices Found"
+
+REFRESH_TOKEN_NOT_FOUND = "Refresh Token Not Found"

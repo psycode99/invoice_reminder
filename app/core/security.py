@@ -15,10 +15,12 @@ from jwt import (
 from loguru import logger
 from app.api.v1.dependencies import get_db
 from app.services.oauth.google import GoogleProvider
+from passlib.hash import bcrypt
 
 SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
 EXPIRATION_MINUTES = settings.expiration_minutes
+REFRESH_TOKEN_EXPIRATION_DAYS = settings.refresh_token_expiration_days
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -32,6 +34,17 @@ def create_access_token(id: UUID):
 
     logger.info("JWT Created", user_id=str(id))
     return encoded_jwt
+
+
+def create_refresh_token(id: UUID):
+    logger.info("Creating Refresh Token", user_id=str(id))
+
+    expires_in = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRATION_DAYS)
+    to_encode = {"exp": expires_in, "sub": str(id)}
+    encoded_refresh_token = jwt.encode(to_encode, SECRET_KEY, ALGORITHM)
+
+    logger.info("Refresh Token Created", user_id=str(id))
+    return encoded_refresh_token, expires_in
 
 
 def decode_jwt(encoded_jwt: str) -> dict:
@@ -67,3 +80,13 @@ def get_current_user_dependency(token: str = Depends(oauth2_scheme), db: Session
     auth_service = AuthService(providers={"google": GoogleProvider()})
 
     return auth_service.get_current_user(token=token, db=db)
+
+
+def hash_token(token: str):
+    hashed_refresh_token = bcrypt.hash(token)
+    return hashed_refresh_token
+
+
+def verify_hashed_token(token: str, hashed_token: str):
+    verification = bcrypt.verify(token, hashed_token)
+    return verification

@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Request, status
 
-from app.core.security import create_access_token, decode_jwt
+from app.core.security import create_access_token, create_refresh_token, decode_jwt
 from app.services.oauth.base import OauthProvider
 from app.db.models.users import User
 from sqlalchemy.orm import Session
@@ -39,8 +39,13 @@ class AuthService:
             logger.info("New User Created", user_id=str(user.id))
 
         access_token = create_access_token(user.id)
+        refresh_token, _ = create_refresh_token(user.id)
         logger.info("User Logged In", user_id=str(user.id))
-        return {"access_token": access_token, "type": "bearer"}
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "type": "bearer",
+        }
 
     def get_current_user(self, token, db: Session):
         payload = decode_jwt(token)
