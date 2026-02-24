@@ -16,6 +16,7 @@ from loguru import logger
 from app.api.v1.dependencies import get_db
 from app.services.oauth.google import GoogleProvider
 from passlib.hash import bcrypt
+import hashlib
 
 SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
@@ -83,8 +84,7 @@ def get_current_user_dependency(token: str = Depends(oauth2_scheme), db: Session
 
 
 def hash_token(token: str):
-    hashed_refresh_token = bcrypt.hash(token)
-    return hashed_refresh_token
+    return hashlib.sha256(string=token.encode()).hexdigest()
 
 
 def verify_hashed_token(token: str, hashed_token: str):

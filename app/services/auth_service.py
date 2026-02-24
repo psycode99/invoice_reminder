@@ -39,12 +39,12 @@ class AuthService:
             logger.info("New User Created", user_id=str(user.id))
 
         access_token = create_access_token(user.id)
-        refresh_token, _ = create_refresh_token(user.id)
+        refresh_token, expires_in = create_refresh_token(user.id)
         logger.info("User Logged In", user_id=str(user.id))
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
-            "type": "bearer",
+            "refresh_token_exp": expires_in,
         }
 
     def get_current_user(self, token, db: Session):

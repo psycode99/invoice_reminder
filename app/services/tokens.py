@@ -61,7 +61,7 @@ class RefreshTokens:
             .filter(
                 RefreshToken.user_id == user_id,
                 RefreshToken.token_hash == hashed_refresh_token,
-                RefreshToken.revoked == False
+                RefreshToken.revoked == False,
             )
             .first()
         )
@@ -78,7 +78,6 @@ class RefreshTokens:
 
         db.refresh(rf_token)
 
-
     def rotate_refresh_token(self, db: Session, old_refresh_token: str):
         user_id = decode_jwt(old_refresh_token).get("sub")
 
@@ -92,8 +91,7 @@ class RefreshTokens:
                 RefreshToken.user_id == user_id,
                 RefreshToken.token_hash == token_hash,
                 RefreshToken.revoked == False,
-                RefreshToken.expires_at > datetime.now(timezone.utc)
-
+                RefreshToken.expires_at > datetime.now(timezone.utc),
             )
             .first()
         )
@@ -118,9 +116,11 @@ class RefreshTokens:
             expires_at=expires_in,
         )
 
+        user_id = new_token.user_id
+
         rf_token.replaced_by_token = new_token.id
         db.add(new_token)
         db.commit()
 
         logger.info("Refresh Token Rotated", user_id=str(user_id))
-        return new_refresh_token
+        return new_refresh_token, user_id, expires_in

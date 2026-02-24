@@ -11,7 +11,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 
-
 class User(Base):
     __tablename__ = "users"
 
@@ -26,7 +25,7 @@ class User(Base):
 
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    auth_provider: Mapped[str] = mapped_column(String(50)) 
+    auth_provider: Mapped[str] = mapped_column(String(50))
     provider_user_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     full_name: Mapped[str | None] = mapped_column(String(255))
@@ -43,10 +42,11 @@ class User(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
-    last_login_at: Mapped[DateTime | None] = mapped_column(
-        DateTime(timezone=True)
-    )
-    businesses: Mapped[list["Business"]] = relationship( # type: ignore
+    last_login_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True))
+    businesses: Mapped[list["Business"]] = relationship(  # type: ignore
         back_populates="owner",
         cascade="all, delete-orphan",
+    )
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(  # type: ignore
+        back_populates="user", cascade="all, delete-orphan"
     )
