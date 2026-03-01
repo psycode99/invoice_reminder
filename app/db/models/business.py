@@ -63,3 +63,7 @@ class Business(Base):
         back_populates="business",
         cascade="all, delete-orphan",
     )
+    accounting_integrations: Mapped[list["AccountingIntegration"]] = relationship( # type: ignore
+        back_populates="business",
+        cascade="all, delete-orphan",
+    )

@@ -1,6 +1,6 @@
 from app.middleware.logging_middleware import logging_middleware
 from fastapi import FastAPI
-from app.api.v1.routes import auth, user, business, invoice
+from app.api.v1.routes import auth, user, business, invoice, integrations
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi_pagination import add_pagination
 from app.core.logging import setup_logger
@@ -22,5 +22,6 @@ app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(business.router)
 app.include_router(invoice.router)
+app.include_router(integrations.router)
 
 add_pagination(app)

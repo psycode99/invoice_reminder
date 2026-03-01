@@ -1,5 +1,3 @@
-# app/core/logger.py
-
 import sys
 from loguru import logger
 

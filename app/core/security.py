@@ -15,7 +15,6 @@ from jwt import (
 from loguru import logger
 from app.api.v1.dependencies import get_db
 from app.services.oauth.google import GoogleProvider
-from passlib.hash import bcrypt
 import hashlib
 
 SECRET_KEY = settings.secret_key
@@ -87,6 +86,27 @@ def hash_token(token: str):
     return hashlib.sha256(string=token.encode()).hexdigest()
 
 
-def verify_hashed_token(token: str, hashed_token: str):
-    verification = bcrypt.verify(token, hashed_token)
-    return verification
+def encode_business_state(business_id: UUID):
+    return jwt.encode(payload={"business_id": business_id}, key=SECRET_KEY, algorithm="HS256")
+
+
+def decode_business_state(encoded_state: str) -> dict:
+    try:
+        decoded_jwt = jwt.decode(encoded_state, SECRET_KEY, algorithms=[ALGORITHM])
+    except InvalidTokenError:
+        logger.exception("Invalid Token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token"
+        )
+    except InvalidSignatureError:
+        logger.exception("Invalid Token Signature")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Signature on Token",
+        )
+    except DecodeError:
+        logger.exception("Error Decoding Token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Error Decoding Token"
+        )
+    return decoded_jwt

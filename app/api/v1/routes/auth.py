@@ -8,7 +8,7 @@ from app.api.v1.dependencies import get_db
 from sqlalchemy.orm import Session
 from app.core.config import settings
 
-from app.services.tokens import RefreshTokens
+from app.services.tokens_service import RefreshTokens
 
 router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 auth_service = AuthService(providers={"google": GoogleProvider()})

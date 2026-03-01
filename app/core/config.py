@@ -1,8 +1,4 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-import os
-
-# BASE_DIR = os.path.dirname(__file__)
-# DOTENV = os.path.join(BASE_DIR, ".env")
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -22,10 +18,13 @@ class Settings(BaseSettings):
     smtp_port: int
     smtp_email: str
     prod: bool = False
+    qbo_client_id: str
+    qbo_client_secret: str
+    qbo_redirect_uri: str
+    qbo_environment: str
 
     class Config:
         env_file = ".env"
 
-    # model_config = SettingsConfigDict(env_file=DOTENV)
 
 settings = Settings()

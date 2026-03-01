@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Numeric,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -29,6 +30,15 @@ class Invoice(Base):
         ForeignKey("businesses.id", ondelete="CASCADE"),
         index=True,
     )
+
+    accounting_integration_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("accounting_integrations.id"),
+        nullable=True,
+        index=True,
+    )
+
+    external_invoice_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     invoice_number: Mapped[str] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(
@@ -82,3 +92,12 @@ class Invoice(Base):
     )
 
     business: Mapped["Business"] = relationship(back_populates="invoices")  # type: ignore
+    accounting_integration: Mapped["AccountingIntegration"] = relationship(back_populates="invoices")  # type: ignore
+
+    __table_args__ = (
+    UniqueConstraint(
+        "accounting_integration_id",
+        "external_invoice_id",
+        name="uq_external_invoice_per_integration"
+    ),
+)
