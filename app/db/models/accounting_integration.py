@@ -72,14 +72,19 @@ class AccountingIntegration(Base):
         onupdate=func.now(),
     )
 
+    last_synced_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
     # Relationship
-    business: Mapped["Business"] = relationship(back_populates="accounting_integrations") # type: ignore
-    invoices: Mapped["Invoice"] = relationship(back_populates="accounting_integration") # type: ignore
+    business: Mapped["Business"] = relationship(back_populates="accounting_integrations")  # type: ignore
+    invoices: Mapped["Invoice"] = relationship(back_populates="accounting_integration")  # type: ignore
 
     __table_args__ = (
-    UniqueConstraint(
-        "business_id",
-        "provider",
-        name="uq_business_provider",
-    ),
-)
+        UniqueConstraint(
+            "business_id",
+            "provider",
+            name="uq_business_provider",
+        ),
+    )

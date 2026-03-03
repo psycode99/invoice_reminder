@@ -1,3 +1,4 @@
+from datetime import datetime
 import uuid
 from sqlalchemy import (
     Boolean,
@@ -95,9 +96,14 @@ class Invoice(Base):
     accounting_integration: Mapped["AccountingIntegration"] = relationship(back_populates="invoices")  # type: ignore
 
     __table_args__ = (
-    UniqueConstraint(
-        "accounting_integration_id",
-        "external_invoice_id",
-        name="uq_external_invoice_per_integration"
-    ),
-)
+        UniqueConstraint(
+            "accounting_integration_id",
+            "external_invoice_id",
+            name="uq_external_invoice_per_integration",
+        ),
+        UniqueConstraint(
+            "accounting_integration_id",
+            "external_invoice_id",
+            name="uq_invoice_integration_external",
+        ),
+    )
