@@ -12,3 +12,6 @@ REFRESH_TOKEN_NOT_FOUND = "Refresh Token Not Found"
 MISSING_AUTH_CODE = "Missing Authorization Code"
 
 MISSING_STATE = "Missing State"
+
+MISSING_SIGNATURE = "Missing Intuit Signature"
+INVALID_SIGNATURE = "Invalid Intuit Signature"

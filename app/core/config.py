@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     qbo_client_secret: str
     qbo_redirect_uri: str
     qbo_environment: str
+    qbo_verifier_token: str
 
     class Config:
         env_file = ".env"

@@ -1,40 +1,37 @@
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
-from intuitlib.client import AuthClient
+
 from loguru import logger
-from quickbooks.objects import Invoice
-from quickbooks import QuickBooks
+from sqlalchemy import insert
 from app.db.models.accounting_integration import AccountingIntegration
-from app.db.session import SessionLocal
 from app.db.models import invoice
-from sqlalchemy.dialects.postgresql import insert
 from app.tasks.celery_app import celery_app
+from app.db.session import SessionLocal
+from intuitlib.client import AuthClient
+from quickbooks import QuickBooks
 from app.core.config import settings
+from quickbooks.objects import Invoice
 from dateutil import parser
 
 
 @celery_app.task(bind=True, max_retries=3)
-def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
+def invoice_webhooks_qbo(self, payload: dict):
     db = SessionLocal()
     try:
+        data: dict = payload.get("data")
+        realm_id = data.get("realmId")
+        event_notifications: list[dict] = data.get("eventNotifications")
 
         integration = (
             db.query(AccountingIntegration)
             .filter(
+                AccountingIntegration.company_id == realm_id,
                 AccountingIntegration.provider == "qbo",
-                AccountingIntegration.id == accounting_integration_id,
-                AccountingIntegration.business_id == business_id,
             )
             .first()
         )
 
         if not integration:
-            logger.warning(
-                "Integration Not Found",
-                business_id=str(business_id),
-                provider="qbo",
-                accounting_integration_id=str(accounting_integration_id),
-            )
+            logger.warning("Integration not Found", company_id=realm_id, provider="qbo")
             return
 
         auth_client = AuthClient(
@@ -50,44 +47,43 @@ def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
             company_id=integration.company_id,
         )
 
-        qb_invoices = []
-        start_point = 1
-        batch_size = 1000
-        if integration.last_synced_at:
+        to_delete_ids = []
+        invoice_ids = []
 
-            while True:
-                query_ = f"""
-                                SELECT * FROM Invoice
-                                WHERE MetaData.LastUpdatedTime > '{integration.last_synced_at.isoformat()}'
-                                STARTPOSITION {start_point}
-                                MAXRESULTS {batch_size}
-                        """
-
-                batch = Invoice.query(
-                    query=query_,
-                    qb=qb_client,
-                )
-                qb_invoices.extend(batch)
-
-                if len(batch) < batch_size:
-                    break
-
-                start_point += batch_size
-        else:
-
-            while True:
-                batch = Invoice.all(
-                    start_position=start_point, max_results=batch_size, qb=qb_client
-                )
-                qb_invoices.extend(batch)
-
-                if len(batch) < batch_size:
-                    break
-
-                start_point += batch_size
-
+        to_insert_dict = []
         invoice_dict = []
-        for inv in qb_invoices:
+
+        for event in event_notifications:
+            if event.get("operation") == "Delete":
+                to_delete_ids.append(event.get("id"))
+            elif event.get("operation") in {"Create", "Update"}:
+                invoice_ids.append(event.get("id"))
+
+        if to_delete_ids:
+            for i in to_delete_ids:
+                invoice_to_del = (
+                    db.query(invoice.Invoice)
+                    .filter(
+                        invoice.Invoice.external_invoice_id == i,
+                        invoice.Invoice.accounting_integration_id == integration.id,
+                    )
+                    .first()
+                )
+
+                if not invoice_to_del:
+                    logger.warning(
+                        "Invoice Not Found", integration="qbo", external_invoice_id=i
+                    )
+                    continue
+
+                db.delete(invoice_to_del)
+
+        if invoice_ids:
+            query = f""" SELECT * FROM Invoice WHERE Id IN ({','.join(invoice_ids)})"""
+            invoice_objects = Invoice.query(query, qb=qb_client)
+            to_insert_dict.extend(invoice_objects)
+
+        for inv in to_insert_dict:
             if not inv.BillEmail or not getattr(inv.BillEmail, "Address", None):
                 continue
 
@@ -107,11 +103,11 @@ def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
 
             now = datetime.now(UTC)
             next_reminder_at = now + timedelta(days=2) if due_dt < now else due_dt
-            
+
             invoice_dict.append(
                 {
-                    "business_id": business_id,
-                    "accounting_integration_id": accounting_integration_id,
+                    "business_id": integration.business_id,
+                    "accounting_integration_id": integration.id,
                     "external_invoice_id": inv.Id,
                     "invoice_number": inv.DocNumber,
                     "customer_name": inv.CustomerRef.name if inv.CustomerRef else None,
@@ -156,14 +152,6 @@ def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
         )
         if invoice_dict:
             db.execute(stmt)
-
-        if qb_invoices:
-            max_updated = max(inv.MetaData.LastUpdatedTime for inv in qb_invoices)
-            max_updated = parser.isoparse(max_updated)
-            if max_updated.tzinfo is None:
-                max_updated = max_updated.replace(tzinfo=UTC)
-
-            integration.last_synced_at = max_updated
 
         db.commit()
 

@@ -23,3 +23,8 @@ class AccountingIntegrationService:
         service = self.integrations.get(integration_name)
         logger.info("Syncing Invoices")
         return service.sync_invoices(business_id=business_id, accounting_integration_id=accounting_integration_id)
+    
+    def webhooks_handler(self, integration_name: str, request: Request):
+        service = self.integrations.get(integration_name)
+        logger.info("Hendling webhooks", integration=integration_name)
+        return service.webhooks_handler(request=request)

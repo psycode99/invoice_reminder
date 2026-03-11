@@ -1,6 +1,6 @@
 from uuid import UUID
 from loguru import logger
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from app.core.constants import MAX_REMINDERS
 from app.db.models.invoice import Invoice
 from app.mail.build_mail import build_invoice_email
@@ -93,7 +93,7 @@ def send_invoice_reminder_task(self, invoice_id: UUID):
         logger_task = logger.bind(invoice_id=str(invoice.id))
 
         if settings.prod:
-            logger_task.info("Sending invoice Issued")
+            logger_task.info("Sending Invoice Reminder")
             send_email(
                 to_addr=invoice.customer_email,
                 from_addr=settings.from_email_addr,
@@ -103,7 +103,7 @@ def send_invoice_reminder_task(self, invoice_id: UUID):
                 type="issued"
             )
         else:
-            logger_task.info("Sending invoice Issued")
+            logger_task.info("Sending Invoice Reminder")
             send_email_dev(
                 to_addr=invoice.customer_email,
                 from_addr=settings.smtp_email,
@@ -135,7 +135,7 @@ def process_due_reminders():
         now = datetime.now(UTC)
 
         stmt = select(Invoice).where(
-            Invoice.payment_status == "unpaid",
+            or_(Invoice.payment_status == "unpaid", Invoice.payment_status == "partial"),
             Invoice.reminders_enabled == True,
             Invoice.reminder_count < MAX_REMINDERS,
             Invoice.next_reminder_at <= now,

@@ -17,3 +17,7 @@ class AccountingIntegrations(ABC):
     @abstractmethod
     def sync_invoices(self, business_id: UUID, accounting_integration_id: UUID):
         pass
+
+    @abstractmethod
+    def webhooks_handler(self, request: Request):
+        pass

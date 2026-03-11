@@ -1,16 +1,26 @@
 from datetime import UTC, datetime, timedelta
+import json
 from uuid import UUID
 from fastapi import HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from intuitlib.client import AuthClient
 from intuitlib.enums import Scopes
 from app.tasks.invoice_sync_tasks import sync_qbo_invoices
 
 from app.core.config import settings
-from app.core.messages import MISSING_AUTH_CODE, MISSING_STATE
+from app.core.messages import (
+    INVALID_SIGNATURE,
+    MISSING_AUTH_CODE,
+    MISSING_SIGNATURE,
+    MISSING_STATE,
+)
 from app.core.security import decode_business_state
 from app.services.accounting_integrations.base import AccountingIntegrations
 from sqlalchemy.orm import Session
 from app.db.models.accounting_integration import AccountingIntegration
+import hmac
+import hashlib
+import base64
 
 
 auth_client = AuthClient(
@@ -20,11 +30,11 @@ auth_client = AuthClient(
     environment=settings.qbo_environment,
 )
 
+
 class QuickBooksOnlineIntegration(AccountingIntegrations):
     def get_auth_url(self, state):
         url = auth_client.get_authorization_url(
-            scopes=[Scopes.ACCOUNTING],
-            state_token=state
+            scopes=[Scopes.ACCOUNTING], state_token=state
         )
         return {"url": url}
 
@@ -37,12 +47,12 @@ class QuickBooksOnlineIntegration(AccountingIntegrations):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=MISSING_AUTH_CODE
             )
-        
+
         if not state:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=MISSING_STATE
             )
-        
+
         business_id = decode_business_state(state).get("business_id")
 
         auth_client.get_bearer_token(auth_code=code)
@@ -57,18 +67,51 @@ class QuickBooksOnlineIntegration(AccountingIntegrations):
             "access_token": access_token,
             "refresh_token": refresh_token,
             "company_id": realm_id,
-            "expires_at": datetime.now(UTC) + timedelta(seconds=expires_in)
+            "expires_at": datetime.now(UTC) + timedelta(seconds=expires_in),
         }
 
         new_integration = AccountingIntegration(**integration_data)
         db.add(new_integration)
         db.commit()
 
-        return {
-            "access_token": access_token,
-            "business_id": business_id
-        }
-    
+        return {"access_token": access_token, "business_id": business_id}
+
     def sync_invoices(self, business_id: UUID, accounting_integration_id: UUID):
         sync_qbo_invoices.delay(business_id, accounting_integration_id)
         return {"message": "syncing..."}
+
+    async def webhooks_handler(self, request: Request):
+        raw_body = await request.body()
+        intuit_signature = request.headers.get("intuit-signature")
+
+        if not intuit_signature:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=MISSING_SIGNATURE
+            )
+
+        expected_signature = base64.b64encode(
+            hmac.new(
+                settings.qbo_verifier_token.encode(), raw_body, hashlib.sha256
+            ).digest()
+        ).decode()
+
+        if not hmac.compare_digest(expected_signature, intuit_signature):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_SIGNATURE
+            )
+
+        event = json.loads(raw_body)
+
+        event_type = event.get("type")
+        source = event.get("source")
+        event_id = event.get("id")
+        data = event.get("data", {})
+
+        realm_id = data.get("realmId")
+        changes = data.get("eventNotifications", [])
+
+        print(changes)
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK, content={"status": "received"}
+        )
