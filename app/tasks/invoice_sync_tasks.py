@@ -44,6 +44,19 @@ def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
             environment=settings.qbo_environment,
         )
 
+        if integration.expires_at <= datetime.now(UTC) + timedelta(minutes=5):
+            auth_client.refresh(integration.refresh_token)
+
+            integration.access_token = auth_client.access_token
+            integration.refresh_token = auth_client.refresh_token
+
+            auth_client.access_token = auth_client.access_token
+            auth_client.refresh_token = auth_client.refresh_token
+
+            db.commit()
+            db.refresh(integration)
+
+
         qb_client = QuickBooks(
             auth_client=auth_client,
             refresh_token=integration.refresh_token,
@@ -64,9 +77,13 @@ def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
                         """
 
                 batch = Invoice.query(
-                    query=query_,
+                    query_,
                     qb=qb_client,
                 )
+                if not batch:
+                    logger.warning("No Invoices to Sync", integration="qbo", integration_id=integration.id)
+                    break 
+                
                 qb_invoices.extend(batch)
 
                 if len(batch) < batch_size:
@@ -79,6 +96,10 @@ def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
                 batch = Invoice.all(
                     start_position=start_point, max_results=batch_size, qb=qb_client
                 )
+                if not batch:
+                    logger.warning("No Invoices to Sync", integration="qbo", integration_id=integration.id)
+                    return 
+                
                 qb_invoices.extend(batch)
 
                 if len(batch) < batch_size:
