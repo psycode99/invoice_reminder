@@ -50,9 +50,9 @@ def sync_invoices(
     business_id: UUID,
     accounting_integration_id: UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user_dependency),
+    # current_user=Depends(get_current_user_dependency),
 ):
-    business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
+    # business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
     return integration_service.sync_invoices(
         integration_name=integration_name,
         business_id=business_id,
@@ -60,9 +60,9 @@ def sync_invoices(
     )
 
 
-@router.post("{integration_name}/wh/notifications", status_code=status.HTTP_200_OK)
+@router.post("/{integration_name}/wh/notifications", status_code=status.HTTP_200_OK)
 async def webhooks_handler(
     integration_name: str, request: Request,
 ):
-    return integration_service.webhooks_handler(integration_name=integration_name, request=request)
+    return await integration_service.webhooks_handler(integration_name=integration_name, request=request)
 

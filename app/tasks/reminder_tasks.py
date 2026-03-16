@@ -37,7 +37,7 @@ def send_invoice_issued_task(self, invoice_id: UUID):
                 subject=subject,
                 msg=msg,
                 invoice_id=invoice.id,
-                type="issued"
+                type="issued",
             )
         else:
             logger_task.info("Sending invoice Issued")
@@ -47,7 +47,7 @@ def send_invoice_issued_task(self, invoice_id: UUID):
                 subject=subject,
                 msg=msg,
                 invoice_id=invoice.id,
-                type="issued"
+                type="issued",
             )
         invoice.next_reminder_at = calculate_next_reminder(invoice)
 
@@ -74,15 +74,14 @@ def send_invoice_reminder_task(self, invoice_id: UUID):
 
         invoice = db.execute(stmt).scalar_one()
 
-        if invoice.payment_status != "unpaid":
+        if invoice.payment_status != "unpaid" or invoice.payment_status != "partial":
             return
 
         if invoice.reminder_count >= MAX_REMINDERS:
             return
 
-        if (
-            not invoice.reminders_enabled
-            or invoice.next_reminder_at > datetime.now(UTC)
+        if not invoice.reminders_enabled or invoice.next_reminder_at > datetime.now(
+            UTC
         ):
             return
 
@@ -100,7 +99,7 @@ def send_invoice_reminder_task(self, invoice_id: UUID):
                 subject=subject,
                 msg=msg,
                 invoice_id=invoice.id,
-                type="issued"
+                type="issued",
             )
         else:
             logger_task.info("Sending Invoice Reminder")
@@ -110,7 +109,7 @@ def send_invoice_reminder_task(self, invoice_id: UUID):
                 subject=subject,
                 msg=msg,
                 invoice_id=invoice.id,
-                type="issued"
+                type="issued",
             )
 
         invoice.reminder_count += 1
@@ -135,7 +134,9 @@ def process_due_reminders():
         now = datetime.now(UTC)
 
         stmt = select(Invoice).where(
-            or_(Invoice.payment_status == "unpaid", Invoice.payment_status == "partial"),
+            or_(
+                Invoice.payment_status == "unpaid", Invoice.payment_status == "partial"
+            ),
             Invoice.reminders_enabled == True,
             Invoice.reminder_count < MAX_REMINDERS,
             Invoice.next_reminder_at <= now,

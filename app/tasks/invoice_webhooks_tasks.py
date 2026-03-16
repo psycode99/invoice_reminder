@@ -1,9 +1,9 @@
 from datetime import UTC, datetime, timedelta
-
 from loguru import logger
 from sqlalchemy import insert
 from app.db.models.accounting_integration import AccountingIntegration
 from app.db.models import invoice
+from app.db.models.webhook_events import WebhookEvent
 from app.tasks.celery_app import celery_app
 from app.db.session import SessionLocal
 from intuitlib.client import AuthClient
@@ -14,12 +14,18 @@ from dateutil import parser
 
 
 @celery_app.task(bind=True, max_retries=3)
-def invoice_webhooks_qbo(self, payload: dict):
+def invoice_webhooks_qbo(self, payload: list[dict]):
     db = SessionLocal()
     try:
-        data: dict = payload.get("data")
+        data: dict = payload[0].get("data")
         realm_id = data.get("realmId")
         event_notifications: list[dict] = data.get("eventNotifications")
+
+        if not realm_id:
+            return
+        
+        if not event_notifications:
+            return
 
         integration = (
             db.query(AccountingIntegration)
@@ -32,6 +38,17 @@ def invoice_webhooks_qbo(self, payload: dict):
 
         if not integration:
             logger.warning("Integration not Found", company_id=realm_id, provider="qbo")
+            return
+
+        stmt = (
+            insert(WebhookEvent)
+            .values(event_id=payload["id"], provider="qbo", company_id=realm_id)
+            .on_conflict_do_nothing()
+        )
+
+        result = db.execute(stmt)
+
+        if result.rowcount == 0:
             return
 
         auth_client = AuthClient(
@@ -95,11 +112,8 @@ def invoice_webhooks_qbo(self, payload: dict):
             else:
                 payment_status = "unpaid"
 
-            due = inv.DueDate
-            if isinstance(due, datetime):
-                due_dt = due
-            else:
-                due_dt = datetime.combine(due, datetime.min.time(), tzinfo=UTC)
+            due_date = parser.parse(inv.DueDate).date()
+            due_dt = datetime.combine(due_date, datetime.min.time(), tzinfo=UTC)
 
             now = datetime.now(UTC)
             next_reminder_at = now + timedelta(days=2) if due_dt < now else due_dt

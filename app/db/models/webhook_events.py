@@ -20,9 +20,9 @@ class WebhookEvent(Base):
 
     received_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
+        default=datetime.now(UTC),
         nullable=False,
-    ),
+    )
 
     __table_args__ = (
     UniqueConstraint("provider", "event_id", name="uq_provider_event"),

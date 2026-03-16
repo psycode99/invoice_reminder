@@ -21,6 +21,8 @@ from app.db.models.accounting_integration import AccountingIntegration
 import hmac
 import hashlib
 import base64
+from loguru import logger
+from app.tasks.invoice_webhooks_tasks import invoice_webhooks_qbo
 
 
 auth_client = AuthClient(
@@ -85,6 +87,7 @@ class QuickBooksOnlineIntegration(AccountingIntegrations):
         intuit_signature = request.headers.get("intuit-signature")
 
         if not intuit_signature:
+            logger.warning("Intuit Signature Not Found")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=MISSING_SIGNATURE
             )
@@ -96,21 +99,17 @@ class QuickBooksOnlineIntegration(AccountingIntegrations):
         ).decode()
 
         if not hmac.compare_digest(expected_signature, intuit_signature):
+            logger.warning(
+                "Invalid Signature",
+                intuit_signature=intuit_signature,
+                expected_signature=expected_signature,
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_SIGNATURE
             )
 
         event = json.loads(raw_body)
-
-        event_type = event.get("type")
-        source = event.get("source")
-        event_id = event.get("id")
-        data = event.get("data", {})
-
-        realm_id = data.get("realmId")
-        changes = data.get("eventNotifications", [])
-
-        print(changes)
+        invoice_webhooks_qbo.delay(payload=event)
 
         return JSONResponse(
             status_code=status.HTTP_200_OK, content={"status": "received"}

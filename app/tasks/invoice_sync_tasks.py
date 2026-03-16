@@ -99,15 +99,12 @@ def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
             else:
                 payment_status = "unpaid"
 
-            due = inv.DueDate
-            if isinstance(due, datetime):
-                due_dt = due
-            else:
-                due_dt = datetime.combine(due, datetime.min.time(), tzinfo=UTC)
+            due_date = parser.parse(inv.DueDate).date()
+            due_dt = datetime.combine(due_date, datetime.min.time(), tzinfo=UTC)
 
             now = datetime.now(UTC)
             next_reminder_at = now + timedelta(days=2) if due_dt < now else due_dt
-            
+
             invoice_dict.append(
                 {
                     "business_id": business_id,

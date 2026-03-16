@@ -43,7 +43,7 @@ celery_app = Celery(
     "invoice_worker",
     broker=settings.redis_url,
     backend=settings.redis_backend,
-    include=["app.tasks.reminder_tasks", "app.tasks.invoice_sync_tasks"]
+    include=["app.tasks.reminder_tasks", "app.tasks.invoice_sync_tasks", "app.tasks.invoice_webhooks_tasks"]
 )
 
 celery_app.conf.update(
@@ -67,4 +67,5 @@ celery_app.conf.beat_schedule = {
 
 import app.tasks.reminder_tasks
 import app.tasks.invoice_sync_tasks
+import app.tasks.invoice_webhooks_tasks
 import app.tasks.signals
