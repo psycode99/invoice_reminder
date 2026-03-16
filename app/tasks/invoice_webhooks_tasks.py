@@ -60,13 +60,10 @@ def invoice_webhooks_qbo(self, payload: list[dict]):
             )
 
             if integration.expires_at <= datetime.now(UTC) + timedelta(minutes=5):
-                resp = auth_client.refresh(integration.refresh_token)
+                auth_client.refresh(integration.refresh_token)
 
-                integration.access_token = resp["access_token"]
-                integration.refresh_token = resp["refresh_token"]
-
-                auth_client.access_token = resp["access_token"]
-                auth_client.refresh_token = resp["refresh_token"]
+                integration.access_token = auth_client.access_token
+                integration.refresh_token = auth_client.refresh_token
 
                 db.commit()
                 db.refresh(integration)
@@ -81,8 +78,7 @@ def invoice_webhooks_qbo(self, payload: list[dict]):
                 invoice_to_del = (
                     db.query(invoice.Invoice)
                     .filter(
-                        invoice.Invoice.external_invoice_id
-                        == invoice_id,
+                        invoice.Invoice.external_invoice_id == invoice_id,
                         invoice.Invoice.accounting_integration_id == integration.id,
                     )
                     .first()
@@ -102,7 +98,7 @@ def invoice_webhooks_qbo(self, payload: list[dict]):
                 "qbo.invoice.created.v1",
                 "qbo.invoice.updated.v1",
             }:
-                
+
                 inv = Invoice.get(invoice_id, qb=qb_client)
 
                 if not inv.BillEmail or not getattr(inv.BillEmail, "Address", None):

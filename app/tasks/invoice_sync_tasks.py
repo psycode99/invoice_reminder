@@ -50,12 +50,8 @@ def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
             integration.access_token = auth_client.access_token
             integration.refresh_token = auth_client.refresh_token
 
-            auth_client.access_token = auth_client.access_token
-            auth_client.refresh_token = auth_client.refresh_token
-
             db.commit()
             db.refresh(integration)
-
 
         qb_client = QuickBooks(
             auth_client=auth_client,
@@ -81,9 +77,13 @@ def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
                     qb=qb_client,
                 )
                 if not batch:
-                    logger.warning("No Invoices to Sync", integration="qbo", integration_id=integration.id)
-                    break 
-                
+                    logger.warning(
+                        "No Invoices to Sync",
+                        integration="qbo",
+                        integration_id=integration.id,
+                    )
+                    break
+
                 qb_invoices.extend(batch)
 
                 if len(batch) < batch_size:
@@ -97,9 +97,13 @@ def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
                     start_position=start_point, max_results=batch_size, qb=qb_client
                 )
                 if not batch:
-                    logger.warning("No Invoices to Sync", integration="qbo", integration_id=integration.id)
-                    return 
-                
+                    logger.warning(
+                        "No Invoices to Sync",
+                        integration="qbo",
+                        integration_id=integration.id,
+                    )
+                    break
+
                 qb_invoices.extend(batch)
 
                 if len(batch) < batch_size:
