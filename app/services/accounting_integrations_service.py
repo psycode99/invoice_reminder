@@ -26,5 +26,5 @@ class AccountingIntegrationService:
     
     def webhooks_handler(self, integration_name: str, request: Request):
         service = self.integrations.get(integration_name)
-        logger.info("Hendling webhooks", integration=integration_name)
+        logger.info("Handling webhooks", integration=integration_name)
         return service.webhooks_handler(request=request)
