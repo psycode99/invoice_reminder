@@ -4,18 +4,34 @@ from app.api.v1.routes import auth, user, business, invoice, integrations
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi_pagination import add_pagination
 from app.core.logging import setup_logger
+import sentry_sdk
+from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
 
 logger = setup_logger()
 
+
+
+sentry_sdk.init(
+    dsn="https://3fe55b93d4a44cf9332394d94af2cb85@o4511059618168832.ingest.de.sentry.io/4511059644317776",
+    # Add data like request headers and IP for users,
+    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+    send_default_pii=True,
+)
+
 app = FastAPI()
 app.middleware("http")(logging_middleware)
 app.add_middleware(SessionMiddleware, secret_key="seom-key")
+app.add_middleware(SentryAsgiMiddleware)
 
 
 @app.get("/")
 async def home():
     return {"message": "Invoice Reminder API"}
+
+@app.get("/sentry-debug")
+async def trigger_error():
+    division_by_zero = 1 / 0
 
 
 app.include_router(auth.router)

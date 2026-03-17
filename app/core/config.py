@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     qbo_redirect_uri: str
     qbo_environment: str
     qbo_verifier_token: str
+    sentry_dsn: str
 
     class Config:
         env_file = ".env"
