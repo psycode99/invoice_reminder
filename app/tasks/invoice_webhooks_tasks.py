@@ -37,12 +37,19 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
 
             if not integration:
                 logger.warning(
-                    "Integration not Found", company_id=realm_id, provider="qbo", request_id=str(request_id)
+                    "Integration not Found",
+                    company_id=realm_id,
+                    provider="qbo",
+                    request_id=str(request_id),
                 )
                 return
-            
-            # logger.bind(request_id=str(request_id)).info("Initiating Webhooks Task")
-            logger.info("Initiating Webhooks Task", request_id=str(request_id))
+
+            logger.info(
+                "Initiating Webhooks Task",
+                request_id=str(request_id),
+                integration="qbo",
+                company_id=realm_id,
+            )
 
             stmt = (
                 insert(WebhookEvent)
@@ -92,6 +99,7 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
                         "Invoice Not Found",
                         integration="qbo",
                         external_invoice_id=invoice_id,
+                        request_id=str(request_id),
                     )
                     continue
 
@@ -175,6 +183,12 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
             db.execute(stmt)
 
         db.commit()
+        logger.info(
+            "Webhooks Task Processed",
+            request_id=str(request_id),
+            integration="qbo",
+            company_id=realm_id,
+        )
 
     except Exception as e:
         db.rollback()

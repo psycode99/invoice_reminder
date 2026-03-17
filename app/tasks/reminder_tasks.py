@@ -52,6 +52,7 @@ def send_invoice_issued_task(self, invoice_id: UUID, request_id):
         invoice.next_reminder_at = calculate_next_reminder(invoice)
 
         db.commit()
+        logger_task.info("Invoice Issued Successfully", request_id=str(request_id))
 
     except Exception as e:
         db.rollback()

@@ -18,12 +18,27 @@ class AccountingIntegrationService:
         service = self.integrations.get(integration_name)
         logger.info("Handling Callback For Integration", integration=integration_name)
         return service.handle_callback(request=request, db=db)
-    
-    def sync_invoices(self, integration_name: str, business_id: UUID, accounting_integration_id: UUID, request: Request):
+
+    def sync_invoices(
+        self,
+        integration_name: str,
+        business_id: UUID,
+        accounting_integration_id: UUID,
+        request: Request,
+    ):
         service = self.integrations.get(integration_name)
-        logger.info("Syncing Invoices")
-        return service.sync_invoices(business_id=business_id, accounting_integration_id=accounting_integration_id)
-    
+        logger.info(
+            "Syncing Invoices",
+            integration=integration_name,
+            business_id=str(business_id),
+            accounting_integration_id=str(accounting_integration_id),
+        )
+        return service.sync_invoices(
+            business_id=business_id,
+            accounting_integration_id=accounting_integration_id,
+            request=request,
+        )
+
     def webhooks_handler(self, integration_name: str, request: Request):
         service = self.integrations.get(integration_name)
         logger.info("Handling webhooks", integration=integration_name)
