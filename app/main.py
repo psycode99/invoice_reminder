@@ -6,14 +6,14 @@ from fastapi_pagination import add_pagination
 from app.core.logging import setup_logger
 import sentry_sdk
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
-
+from app.core.config import settings
 
 logger = setup_logger()
 
 
 
 sentry_sdk.init(
-    dsn="https://3fe55b93d4a44cf9332394d94af2cb85@o4511059618168832.ingest.de.sentry.io/4511059644317776",
+    dsn=settings.sentry_dsn,
     # Add data like request headers and IP for users,
     # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
     send_default_pii=True,
