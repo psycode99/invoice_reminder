@@ -78,8 +78,8 @@ class QuickBooksOnlineIntegration(AccountingIntegrations):
 
         return {"access_token": access_token, "business_id": business_id}
 
-    def sync_invoices(self, business_id: UUID, accounting_integration_id: UUID):
-        sync_qbo_invoices.delay(business_id, accounting_integration_id)
+    def sync_invoices(self, business_id: UUID, accounting_integration_id: UUID, request: Request):
+        sync_qbo_invoices.delay(business_id, accounting_integration_id, request_id=request.state.request_id)
         return {"message": "syncing..."}
 
     async def webhooks_handler(self, request: Request):
@@ -109,7 +109,7 @@ class QuickBooksOnlineIntegration(AccountingIntegrations):
             )
 
         event = json.loads(raw_body)
-        invoice_webhooks_qbo.delay(payload=event)
+        invoice_webhooks_qbo.delay(payload=event, request_id=request.state.request_id)
 
         return JSONResponse(
             status_code=status.HTTP_200_OK, content={"status": "received"}

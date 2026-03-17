@@ -15,7 +15,7 @@ class AccountingIntegrations(ABC):
         pass
 
     @abstractmethod
-    def sync_invoices(self, business_id: UUID, accounting_integration_id: UUID):
+    def sync_invoices(self, business_id: UUID, accounting_integration_id: UUID, request: Request):
         pass
 
     @abstractmethod

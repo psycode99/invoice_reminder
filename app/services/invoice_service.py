@@ -3,13 +3,13 @@ from uuid import UUID
 from app.core.messages import INVOICE_NOT_FOUND, NO_INVOICES_FOUND
 from app.db.models import Invoice
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, Response, status
+from fastapi import HTTPException, Request, Response, status
 from app.tasks.reminder_tasks import send_invoice_issued_task
 from loguru import logger
 
 
 class InvoiceService:
-    def create_invoice(self, invoice_data: dict, business_id: UUID, db: Session):
+    def create_invoice(self, invoice_data: dict, business_id: UUID, db: Session, request: Request):
         logger.info(
             "Creating Invoice",
             invoice_number=invoice_data.get("invoice_number"),
@@ -25,7 +25,7 @@ class InvoiceService:
         db.refresh(invoice)
         logger.info("Invoice Created", invoice_id=str(invoice.id))
 
-        send_invoice_issued_task.delay(invoice.id)
+        send_invoice_issued_task.delay(invoice.id, request_id=request.state.request_id)
         return invoice
 
     def get_invoice(self, id: UUID, business_id: UUID, db: Session):

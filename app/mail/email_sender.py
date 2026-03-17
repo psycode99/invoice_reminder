@@ -33,16 +33,23 @@ def send_email_dev(
     invoice_id,
     type,
 ):
-    email = EmailMessage()
-    email["From"] = from_addr
-    email["To"] = to_addr
-    email["Subject"] = subject
+    try:
+        email = EmailMessage()
+        email["From"] = from_addr
+        email["To"] = to_addr
+        email["Subject"] = subject
 
-    # HTML body
-    email.add_alternative(msg, subtype="html")
-
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as smtp:
-        smtp.starttls()
-        smtp.login(settings.smtp_email, settings.smtp_password)
+        # HTML body
+        email.add_alternative(msg, subtype="html")
         logger.info(f"Sending Invoice {type.upper()}", invoice_id=str(invoice_id))
-        smtp.send_message(email)
+
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as smtp:
+            smtp.starttls()
+            smtp.login(settings.smtp_email, settings.smtp_password)
+            logger.info(f"Sending Invoice {type.upper()}", invoice_id=str(invoice_id))
+            smtp.send_message(email)
+    except Exception as e:
+        logger.exception(
+            f"Failed to Send Invoice {type.upper()}", invoice_id=str(invoice_id)
+        )
+        raise

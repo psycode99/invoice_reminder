@@ -14,7 +14,9 @@ from dateutil import parser
 
 
 @celery_app.task(bind=True, max_retries=3)
-def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
+def sync_qbo_invoices(
+    self, business_id: UUID, accounting_integration_id: UUID, request_id
+):
     db = SessionLocal()
     try:
 
@@ -34,8 +36,17 @@ def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
                 business_id=str(business_id),
                 provider="qbo",
                 accounting_integration_id=str(accounting_integration_id),
+                request_id=str(request_id),
             )
             return
+
+        logger.info(
+            "Syncing Invoices",
+            request_id=str(request_id),
+            business_id=str(business_id),
+            provider="qbo",
+            accounting_integration_id=str(accounting_integration_id),
+        )
 
         auth_client = AuthClient(
             client_id=settings.qbo_client_id,
@@ -188,6 +199,13 @@ def sync_qbo_invoices(self, business_id: UUID, accounting_integration_id: UUID):
             integration.last_synced_at = max_updated
 
         db.commit()
+        logger.info(
+            "Invoices Synced Successfully",
+            request_id=str(request_id),
+            business_id=str(business_id),
+            provider="qbo",
+            accounting_integration_id=str(accounting_integration_id),
+        )
 
     except Exception as e:
         db.rollback()

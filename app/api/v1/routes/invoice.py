@@ -1,6 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate
@@ -24,6 +24,7 @@ business_service = BusinessService()
     response_model=InvoiceResponse,
 )
 def create_invoice(
+    request: Request,
     invoice_data: InvoiceCreate,
     business_id: UUID,
     db: Session = Depends(get_db),
@@ -34,6 +35,7 @@ def create_invoice(
         invoice_data=invoice_data.model_dump(mode="json"),
         business_id=business_id,
         db=db,
+        request=request,
     )
 
 

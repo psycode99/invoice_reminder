@@ -46,6 +46,7 @@ def handle_callback(
 
 @router.get("/{integration_name}/sync_invoices", status_code=status.HTTP_200_OK)
 def sync_invoices(
+    request: Request,
     integration_name: str,
     business_id: UUID,
     accounting_integration_id: UUID,
@@ -57,6 +58,7 @@ def sync_invoices(
         integration_name=integration_name,
         business_id=business_id,
         accounting_integration_id=accounting_integration_id,
+        request=request
     )
 
 

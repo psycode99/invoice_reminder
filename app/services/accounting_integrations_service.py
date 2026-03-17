@@ -19,7 +19,7 @@ class AccountingIntegrationService:
         logger.info("Handling Callback For Integration", integration=integration_name)
         return service.handle_callback(request=request, db=db)
     
-    def sync_invoices(self, integration_name: str, business_id: UUID, accounting_integration_id: UUID):
+    def sync_invoices(self, integration_name: str, business_id: UUID, accounting_integration_id: UUID, request: Request):
         service = self.integrations.get(integration_name)
         logger.info("Syncing Invoices")
         return service.sync_invoices(business_id=business_id, accounting_integration_id=accounting_integration_id)

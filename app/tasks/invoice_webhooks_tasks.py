@@ -14,7 +14,7 @@ from dateutil import parser
 
 
 @celery_app.task(bind=True, max_retries=3)
-def invoice_webhooks_qbo(self, payload: list[dict]):
+def invoice_webhooks_qbo(self, payload: list[dict], request_id):
     db = SessionLocal()
     try:
         invoice_dict = []
@@ -37,9 +37,12 @@ def invoice_webhooks_qbo(self, payload: list[dict]):
 
             if not integration:
                 logger.warning(
-                    "Integration not Found", company_id=realm_id, provider="qbo"
+                    "Integration not Found", company_id=realm_id, provider="qbo", request_id=str(request_id)
                 )
                 return
+            
+            # logger.bind(request_id=str(request_id)).info("Initiating Webhooks Task")
+            logger.info("Initiating Webhooks Task", request_id=str(request_id))
 
             stmt = (
                 insert(WebhookEvent)

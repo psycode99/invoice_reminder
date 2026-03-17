@@ -15,7 +15,7 @@ from sqlalchemy.orm import selectinload
 
 
 @celery_app.task(bind=True, max_retries=3)
-def send_invoice_issued_task(self, invoice_id: UUID):
+def send_invoice_issued_task(self, invoice_id: UUID, request_id):
     db = SessionLocal()
     try:
         stmt = (
@@ -30,7 +30,7 @@ def send_invoice_issued_task(self, invoice_id: UUID):
         logger_task = logger.bind(invoice_id=str(invoice.id))
 
         if settings.prod:
-            logger_task.info("Sending invoice Issued")
+            logger_task.info("Sending invoice Issued", request_id=str(request_id))
             send_email(
                 to_addr=invoice.customer_email,
                 from_addr=settings.from_email_addr,
@@ -40,7 +40,7 @@ def send_invoice_issued_task(self, invoice_id: UUID):
                 type="issued",
             )
         else:
-            logger_task.info("Sending invoice Issued")
+            logger_task.info("Sending invoice Issued", request_id=str(request_id))
             send_email_dev(
                 to_addr=invoice.customer_email,
                 from_addr=settings.smtp_email,
@@ -99,7 +99,7 @@ def send_invoice_reminder_task(self, invoice_id: UUID):
                 subject=subject,
                 msg=msg,
                 invoice_id=invoice.id,
-                type="issued",
+                type="reminder",
             )
         else:
             logger_task.info("Sending Invoice Reminder")
@@ -109,7 +109,7 @@ def send_invoice_reminder_task(self, invoice_id: UUID):
                 subject=subject,
                 msg=msg,
                 invoice_id=invoice.id,
-                type="issued",
+                type="reminder",
             )
 
         invoice.reminder_count += 1

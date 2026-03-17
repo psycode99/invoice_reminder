@@ -5,6 +5,8 @@ from loguru import logger
 async def logging_middleware(request: Request, call_next):
     request_id = str(uuid.uuid4())
 
+    request.state.request_id = request_id
+
     with logger.contextualize(
         request_id=request_id,
         method=request.method,
