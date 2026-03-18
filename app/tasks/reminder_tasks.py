@@ -1,8 +1,10 @@
 from uuid import UUID
 from loguru import logger
+import sentry_sdk
 from sqlalchemy import or_, select
 from app.core.constants import MAX_REMINDERS
 from app.db.models.invoice import Invoice
+from app.helpers.sentry_helpers.sentry_celery_helper import SentryHelper
 from app.mail.build_mail import build_invoice_email
 from app.mail.email_escalator import determine_escalation
 from app.core.reminder_calc import calculate_next_reminder
@@ -14,7 +16,7 @@ from app.core.config import settings
 from sqlalchemy.orm import selectinload
 
 
-@celery_app.task(bind=True, max_retries=3)
+@celery_app.task(bind=True, max_retries=3, base=SentryHelper)
 def send_invoice_issued_task(self, invoice_id: UUID, request_id):
     db = SessionLocal()
     try:
@@ -55,6 +57,7 @@ def send_invoice_issued_task(self, invoice_id: UUID, request_id):
         logger_task.info("Invoice Issued Successfully", request_id=str(request_id))
 
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         db.rollback()
         raise self.retry(exc=e, countdown=60)
 
@@ -63,7 +66,7 @@ def send_invoice_issued_task(self, invoice_id: UUID, request_id):
         db.close()
 
 
-@celery_app.task(bind=True, max_retries=3)
+@celery_app.task(bind=True, max_retries=3, base=SentryHelper)
 def send_invoice_reminder_task(self, invoice_id: UUID):
     db = SessionLocal()
     try:
@@ -120,6 +123,7 @@ def send_invoice_reminder_task(self, invoice_id: UUID):
         db.commit()
 
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         db.rollback()
         raise self.retry(exc=e, countdown=60)
 
@@ -146,6 +150,10 @@ def process_due_reminders():
         invoices = db.execute(stmt).scalars().all()
         for invoice in invoices:
             send_invoice_reminder_task.delay(invoice.id)
+    
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        raise
 
     finally:
         db.close()

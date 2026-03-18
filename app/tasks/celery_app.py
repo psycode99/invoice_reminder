@@ -6,9 +6,17 @@ from celery.schedules import crontab
 from celery.signals import setup_logging
 import sys
 import colorama
+from sentry_sdk.integrations.celery import CeleryIntegration
+import sentry_sdk
 
 
 logger.remove()
+
+sentry_sdk.init(
+    dsn=settings.sentry_dsn,
+    integrations=[CeleryIntegration()],
+    traces_sample_rate=1.0
+)
 
 
 def console_formatter(record):

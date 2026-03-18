@@ -1,9 +1,11 @@
 from datetime import UTC, datetime, timedelta
 from loguru import logger
+import sentry_sdk
 from sqlalchemy.dialects.postgresql import insert
 from app.db.models.accounting_integration import AccountingIntegration
 from app.db.models import invoice
 from app.db.models.webhook_events import WebhookEvent
+from app.helpers.sentry_helpers.sentry_celery_helper import SentryHelper
 from app.tasks.celery_app import celery_app
 from app.db.session import SessionLocal
 from intuitlib.client import AuthClient
@@ -13,7 +15,7 @@ from quickbooks.objects import Invoice
 from dateutil import parser
 
 
-@celery_app.task(bind=True, max_retries=3)
+@celery_app.task(bind=True, max_retries=3, base=SentryHelper)
 def invoice_webhooks_qbo(self, payload: list[dict], request_id):
     db = SessionLocal()
     try:
@@ -191,6 +193,7 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
         )
 
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         db.rollback()
         raise self.retry(exc=e, countdown=60)
 

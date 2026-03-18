@@ -8,12 +8,13 @@ from app.db.models.accounting_integration import AccountingIntegration
 from app.db.session import SessionLocal
 from app.db.models import invoice
 from sqlalchemy.dialects.postgresql import insert
+from app.helpers.sentry_helpers.sentry_celery_helper import SentryHelper
 from app.tasks.celery_app import celery_app
 from app.core.config import settings
 from dateutil import parser
+import sentry_sdk
 
-
-@celery_app.task(bind=True, max_retries=3)
+@celery_app.task(bind=True, max_retries=3, base=SentryHelper)
 def sync_qbo_invoices(
     self, business_id: UUID, accounting_integration_id: UUID, request_id
 ):
@@ -73,6 +74,7 @@ def sync_qbo_invoices(
         qb_invoices = []
         start_point = 1
         batch_size = 1000
+
         if integration.last_synced_at:
 
             while True:
@@ -91,7 +93,8 @@ def sync_qbo_invoices(
                     logger.warning(
                         "No Invoices to Sync",
                         integration="qbo",
-                        integration_id=integration.id,
+                        integration_id=str(integration.id),
+                        request_id=str(request_id)
                     )
                     break
 
@@ -111,7 +114,7 @@ def sync_qbo_invoices(
                     logger.warning(
                         "No Invoices to Sync",
                         integration="qbo",
-                        integration_id=integration.id,
+                        integration_id=str(integration.id),
                     )
                     break
 
@@ -208,6 +211,7 @@ def sync_qbo_invoices(
         )
 
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         db.rollback()
         raise self.retry(exc=e, countdown=60)
 
