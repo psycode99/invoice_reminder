@@ -101,9 +101,5 @@ class Invoice(Base):
             "external_invoice_id",
             name="uq_external_invoice_per_integration",
         ),
-        UniqueConstraint(
-            "accounting_integration_id",
-            "external_invoice_id",
-            name="uq_invoice_integration_external",
-        ),
+        
     )

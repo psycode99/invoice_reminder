@@ -4,7 +4,6 @@ from app.core.config import settings
 from loguru import logger
 import smtplib
 from email.message import EmailMessage
-from app.core.config import settings
 
 resend.api_key = settings.resend_api_key
 

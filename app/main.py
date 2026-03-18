@@ -10,8 +10,6 @@ from app.core.config import settings
 
 logger = setup_logger()
 
-
-
 sentry_sdk.init(
     dsn=settings.sentry_dsn,
     # Add data like request headers and IP for users,
