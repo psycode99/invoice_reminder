@@ -5,14 +5,23 @@ from app.core.messages import BUSINESS_NOT_FOUND, NO_BUSINESSES_FOUND, USER_UNAU
 from app.db.models.business import Business
 from loguru import logger
 
+from app.helpers.sentry_helpers.sentry_business_helper import (
+    attach_business_full_context,
+    attach_business_partial_context,
+)
+
 
 class BusinessService:
     def create_business(self, db: Session, business_data: dict, owner_id: UUID):
         logger.info("Creating Business", owner_id=owner_id)
         business = Business(**business_data, owner_id=owner_id)
+
+        attach_business_partial_context(business)
         db.add(business)
         db.commit()
         db.refresh(business)
+        attach_business_full_context(business)
+
         logger.info("Business Created", business_id=str(business.id))
         return business
 
@@ -29,13 +38,13 @@ class BusinessService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail=USER_UNAUTHORIZED
             )
-    
+
         if not business:
             logger.warning("Business Not Found", business_id=str(id))
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=BUSINESS_NOT_FOUND
             )
- 
+
         return business
 
     def get_businesses(self, owner_id: UUID, db: Session):
@@ -72,8 +81,11 @@ class BusinessService:
         for key, value in business_data.items():
             setattr(business, key, value)
 
+        attach_business_partial_context(business)
         db.commit()
         db.refresh(business)
+        attach_business_full_context(business)
+
         logger.info("Business Updated", business_id=str(id), owner_id=str(owner_id))
         return business
 
@@ -91,6 +103,7 @@ class BusinessService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=BUSINESS_NOT_FOUND
             )
+        attach_business_full_context(business)
         db.delete(business)
         db.commit()
         logger.info("Business Deleted", business_id=str(id), owner_id=str(owner_id))

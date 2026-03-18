@@ -4,25 +4,33 @@ from app.core.messages import INVOICE_NOT_FOUND, NO_INVOICES_FOUND
 from app.db.models import Invoice
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, Request, Response, status
+from app.helpers.sentry_helpers.sentry_invoice_helper import (
+    attach_invoice_partial_context,
+    attach_invoice_full_context,
+)
 from app.tasks.reminder_tasks import send_invoice_issued_task
 from loguru import logger
 
 
 class InvoiceService:
-    def create_invoice(self, invoice_data: dict, business_id: UUID, db: Session, request: Request):
+    def create_invoice(
+        self, invoice_data: dict, business_id: UUID, db: Session, request: Request
+    ):
         logger.info(
             "Creating Invoice",
             invoice_number=invoice_data.get("invoice_number"),
             business_id=str(business_id),
         )
         next_reminder_at = invoice_data.get("due_date")
-        invoice = Invoice(
-            **invoice_data, business_id=business_id
-        )
+        invoice = Invoice(**invoice_data, business_id=business_id)
         invoice.next_reminder_at = next_reminder_at
+
+        attach_invoice_partial_context(invoice)
         db.add(invoice)
         db.commit()
         db.refresh(invoice)
+        attach_invoice_full_context(invoice)
+
         logger.info("Invoice Created", invoice_id=str(invoice.id))
 
         send_invoice_issued_task.delay(invoice.id, request_id=request.state.request_id)
@@ -36,6 +44,7 @@ class InvoiceService:
         )
 
         invoice = db.query(Invoice).filter_by(id=id, business_id=business_id).first()
+
         if not invoice:
             logger.warning(
                 "Invoice not Found",
@@ -102,6 +111,7 @@ class InvoiceService:
             .filter(Invoice.id == id, Invoice.business_id == business_id)
             .first()
         )
+
         if not invoice:
             logger.warning(
                 "Invoice not Found",
@@ -115,8 +125,11 @@ class InvoiceService:
         for key, value in invoice_data.items():
             setattr(invoice, key, value)
 
+        attach_invoice_partial_context(invoice)
         db.commit()
         db.refresh(invoice)
+        attach_invoice_full_context(invoice)
+
         logger.info(
             "Invoice Updated",
             invoice_id=str(invoice.id),
@@ -144,6 +157,7 @@ class InvoiceService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=INVOICE_NOT_FOUND
             )
+        attach_invoice_full_context(invoice)
         db.delete(invoice)
         db.commit()
         logger.info(

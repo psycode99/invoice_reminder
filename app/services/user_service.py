@@ -5,6 +5,8 @@ from app.db.models.users import User
 from sqlalchemy.orm import Session
 from loguru import logger
 
+from app.helpers.sentry_helpers.sentry_user_helper import attach_user_context
+
 class UserService():
     def get_user(self, db: Session,  id: UUID):
         logger.info("Fetching User", user_id=str(id))
@@ -28,7 +30,7 @@ class UserService():
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail=USER_UNAUTHORIZED
             )
-        
+        attach_user_context(user)
         db.delete(user)
         db.commit()
 
