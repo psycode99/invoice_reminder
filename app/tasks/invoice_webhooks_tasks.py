@@ -142,10 +142,13 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
                         ),
                         "customer_email": inv.BillEmail.Address,
                         "customer_company": inv.CustomerRef.name,
-                        "subtotal_amount": sum(
-                            getattr(line, "Amount", 0)
-                            for line in inv.Line
-                            if getattr(line, "Amount", None)
+                        "subtotal_amount": next(
+                            (
+                                line.Amount
+                                for line in inv.Line
+                                if line.DetailType == "SubTotalLineDetail"
+                            ),
+                            None,
                         ),
                         "total_amount": inv.Balance,
                         "tax_amount": (

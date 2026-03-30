@@ -14,6 +14,7 @@ from app.core.config import settings
 from dateutil import parser
 import sentry_sdk
 
+
 @celery_app.task(bind=True, max_retries=3, base=SentryHelper)
 def sync_qbo_invoices(
     self, business_id: UUID, accounting_integration_id: UUID, request_id
@@ -94,7 +95,7 @@ def sync_qbo_invoices(
                         "No Invoices to Sync",
                         integration="qbo",
                         integration_id=str(integration.id),
-                        request_id=str(request_id)
+                        request_id=str(request_id),
                     )
                     break
 
@@ -153,10 +154,13 @@ def sync_qbo_invoices(
                     "customer_name": inv.CustomerRef.name if inv.CustomerRef else None,
                     "customer_email": inv.BillEmail.Address,
                     "customer_company": inv.CustomerRef.name,
-                    "subtotal_amount": sum(
-                        getattr(line, "Amount", 0)
-                        for line in inv.Line
-                        if getattr(line, "Amount", None)
+                    "subtotal_amount": next(
+                        (
+                            line.Amount
+                            for line in inv.Line
+                            if line.DetailType == "SubTotalLineDetail"
+                        ),
+                        None,
                     ),
                     "total_amount": inv.Balance,
                     "tax_amount": inv.TxnTaxDetail.TotalTax if inv.TxnTaxDetail else 0,

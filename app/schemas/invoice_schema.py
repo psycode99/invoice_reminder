@@ -15,6 +15,7 @@ class InvoiceCreate(BaseModel):
     subtotal_amount: float
     tax_amount: float
     total_amount: float
+    balance: float
 
     issue_date: date
     due_date: date
@@ -34,6 +35,7 @@ class InvoiceUpdate(BaseModel):
     subtotal_amount: float | None = None
     tax_amount: float | None = None
     total_amount: float | None = None
+    balance: float | None = None
 
     due_date: date | None = None
     paid_at: datetime | None = None
@@ -57,6 +59,7 @@ class InvoiceResponse(BaseModel):
     subtotal_amount: float
     tax_amount: float
     total_amount: float
+    balance: float
 
     issue_date: date
     due_date: date
