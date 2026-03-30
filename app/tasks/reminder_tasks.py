@@ -1,7 +1,7 @@
 from uuid import UUID
 from loguru import logger
 import sentry_sdk
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from app.core.constants import MAX_REMINDERS
 from app.db.models.invoice import Invoice
 from app.helpers.sentry_helpers.sentry_celery_helper import SentryHelper
@@ -139,18 +139,21 @@ def process_due_reminders():
         now = datetime.now(UTC)
 
         stmt = select(Invoice).where(
-            or_(
-                Invoice.payment_status == "unpaid", Invoice.payment_status == "partial"
-            ),
-            Invoice.reminders_enabled == True,
-            Invoice.reminder_count < MAX_REMINDERS,
-            Invoice.next_reminder_at <= now,
+            and_(
+                or_(
+                    Invoice.payment_status == "unpaid",
+                    Invoice.payment_status == "partial",
+                ),
+                Invoice.reminders_enabled == True,
+                Invoice.reminder_count < MAX_REMINDERS,
+                Invoice.next_reminder_at <= now,
+            )
         )
 
         invoices = db.execute(stmt).scalars().all()
         for invoice in invoices:
             send_invoice_reminder_task.delay(invoice.id)
-    
+
     except Exception as e:
         sentry_sdk.capture_exception(e)
         raise
