@@ -4,6 +4,7 @@ from app.core.config import settings
 from loguru import logger
 import smtplib
 from email.message import EmailMessage
+from sentry_sdk import capture_exception
 
 resend.api_key = settings.resend_api_key
 
@@ -18,6 +19,7 @@ def send_email(
         )
         return resp
     except Exception as e:
+        capture_exception(e)
         logger.exception(
             f"Failed to Send Invoice {type.upper()}", invoice_id=str(invoice_id)
         )
@@ -48,6 +50,7 @@ def send_email_dev(
             logger.info(f"Sending Invoice {type.upper()}", invoice_id=str(invoice_id))
             smtp.send_message(email)
     except Exception as e:
+        capture_exception(e)
         logger.exception(
             f"Failed to Send Invoice {type.upper()}", invoice_id=str(invoice_id)
         )

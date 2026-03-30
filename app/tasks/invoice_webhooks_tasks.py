@@ -178,7 +178,7 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
                 "issue_date": stmt.excluded.issue_date,
                 "payment_status": stmt.excluded.payment_status,
                 "currency": stmt.excluded.currency,
-                "next_reminder_at": stmt.excluded.due_date,
+                "next_reminder_at": stmt.excluded.next_reminder_at,
             },
         )
         if invoice_dict:
