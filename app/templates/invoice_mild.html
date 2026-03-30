@@ -36,9 +36,15 @@
                     <td align="right">{{ currency }} {{ tax }}</td>
                   </tr>
                   <tr>
-                    <td style="padding-top:10px; font-weight:bold;">Total:</td>
-                    <td align="right" style="padding-top:10px; font-weight:bold;">
+                    <td>Total:</td>
+                    <td align="right">
                       {{ currency }} {{ total }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding-top:10px; font-weight:bold;">Balance Due:</td>
+                    <td align="right" style="padding-top:10px; font-weight:bold;">
+                      {{ currency }} {{ balance }}
                     </td>
                   </tr>
                 </table>

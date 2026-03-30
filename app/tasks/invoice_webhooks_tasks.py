@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import insert
 from app.db.models.accounting_integration import AccountingIntegration
 from app.db.models import invoice
 from app.db.models.webhook_events import WebhookEvent
+from app.helpers.errs import MissingBalanceException
 from app.helpers.sentry_helpers.sentry_celery_helper import SentryHelper
 from app.tasks.celery_app import celery_app
 from app.db.session import SessionLocal
@@ -116,13 +117,24 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
 
                 if not inv.BillEmail or not getattr(inv.BillEmail, "Address", None):
                     continue
+                
+
+                if inv.Balance is None:
+                    logger.error(
+                        "Invoice Object has no Balance",
+                        integration="qbo",
+                        business_id=str(integration.business_id),
+                        accountung_integration_id=str(integration.id),
+                        external_invoice_id=str(inv.id),
+                    )
+                    raise MissingBalanceException()
 
                 payment_status = None
                 if inv.Balance == 0:
                     payment_status = "paid"
                 elif inv.Balance < inv.TotalAmt:
                     payment_status = "partial"
-                else:
+                elif inv.Balance >= inv.TotalAmt:
                     payment_status = "unpaid"
 
                 due_date = parser.parse(inv.DueDate).date()
@@ -150,10 +162,11 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
                             ),
                             None,
                         ),
-                        "total_amount": inv.Balance,
+                        "total_amount": inv.TotalAmt,
                         "tax_amount": (
                             inv.TxnTaxDetail.TotalTax if inv.TxnTaxDetail else 0
                         ),
+                        "balance": inv.Balance if inv.Balance is not None else 0,
                         "issue_date": inv.TxnDate,
                         "due_date": inv.DueDate,
                         "currency": inv.CurrencyRef.value if inv.CurrencyRef else "USD",
@@ -177,6 +190,7 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
                 "subtotal_amount": stmt.excluded.subtotal_amount,
                 "tax_amount": stmt.excluded.tax_amount,
                 "total_amount": stmt.excluded.total_amount,
+                "balance": stmt.excluded.balance,
                 "due_date": stmt.excluded.due_date,
                 "issue_date": stmt.excluded.issue_date,
                 "payment_status": stmt.excluded.payment_status,

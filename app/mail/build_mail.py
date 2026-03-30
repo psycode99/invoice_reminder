@@ -24,6 +24,7 @@ def build_invoice_email(invoice: Invoice, escalation: str):
         "subtotal": intcomma(invoice.subtotal_amount),
         "tax": intcomma(invoice.tax_amount),
         "total": intcomma(invoice.total_amount),
+        "balance": intcomma(invoice.balance),
         "currency": invoice.currency,
         "issue_date": invoice.issue_date,
         "due_date": invoice.due_date,

@@ -55,7 +55,7 @@ class Invoice(Base):
     subtotal_amount: Mapped[float] = mapped_column(Numeric(12, 2))
     tax_amount: Mapped[float] = mapped_column(Numeric(12, 2))
     total_amount: Mapped[float] = mapped_column(Numeric(12, 2))
-    balance: Mapped[float] = mapped_column(Numeric(12, 2), default=0)
+    balance: Mapped[float] = mapped_column(Numeric(12, 2))
 
     issue_date: Mapped[Date] = mapped_column(Date)
     due_date: Mapped[Date] = mapped_column(Date, nullable=False)
