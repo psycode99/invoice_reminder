@@ -7,6 +7,7 @@ from app.services.oauth.google import GoogleProvider
 from app.api.v1.dependencies import get_db
 from sqlalchemy.orm import Session
 from app.core.config import settings
+from app.main import limiter
 
 from app.services.tokens_service import RefreshTokens
 
@@ -16,6 +17,7 @@ token_service = RefreshTokens()
 
 
 @router.get("/{provider}/login", status_code=status.HTTP_200_OK, name="oauth_login")
+@limiter.limit("5/minute")
 async def oauth_login(request: Request, provider: str):
     return await auth_service.login_redirect(provider_name=provider, request=request)
 
@@ -50,8 +52,12 @@ async def oauth_callback(
 
 
 @router.post("/refresh", status_code=status.HTTP_200_OK)
+@limiter.limit("5/minute")
 def refresh_token(
-    response: Response, refresh_token: str = Cookie(None), db: Session = Depends(get_db)
+    request: Request,
+    response: Response,
+    refresh_token: str = Cookie(None),
+    db: Session = Depends(get_db),
 ):
     if not refresh_token:
         raise HTTPException(

@@ -11,7 +11,7 @@ from app.core.security import get_current_user_dependency
 from app.schemas.invoice_schema import InvoiceCreate, InvoiceResponse, InvoiceUpdate
 from app.services.business_service import BusinessService
 from app.services.invoice_service import InvoiceService
-
+from app.main import limiter
 
 router = APIRouter(prefix="/v1/invoices", tags=["Invoice"])
 invoice_service = InvoiceService()
@@ -23,6 +23,7 @@ business_service = BusinessService()
     status_code=status.HTTP_201_CREATED,
     response_model=InvoiceResponse,
 )
+@limiter.limit("20/minute")
 def create_invoice(
     request: Request,
     invoice_data: InvoiceCreate,
@@ -44,7 +45,9 @@ def create_invoice(
     status_code=status.HTTP_200_OK,
     response_model=Page[InvoiceResponse],
 )
+@limiter.limit("100/minute")
 def search_invoice(
+    request: Request,
     business_id: UUID,
     params: Params = Depends(),
     invoice_number: Optional[str] = Query(None, description="Invoice number to search"),
@@ -74,7 +77,9 @@ def search_invoice(
     status_code=status.HTTP_200_OK,
     response_model=InvoiceResponse,
 )
+@limiter.limit("100/minute")
 def get_invoice(
+    request: Request,
     business_id: UUID,
     invoice_id: UUID,
     db: Session = Depends(get_db),
@@ -89,7 +94,9 @@ def get_invoice(
     status_code=status.HTTP_200_OK,
     response_model=Page[InvoiceResponse],
 )
+@limiter.limit("100/minute")
 def get_invoices(
+    request: Request,
     business_id: UUID,
     params: Params = Depends(),
     db: Session = Depends(get_db),
@@ -105,7 +112,9 @@ def get_invoices(
     status_code=status.HTTP_200_OK,
     response_model=InvoiceResponse,
 )
+@limiter.limit("20/minute")
 def update_invoice(
+    request: Request,
     invoice_data: InvoiceUpdate,
     business_id: UUID,
     invoice_id: UUID,
@@ -122,7 +131,9 @@ def update_invoice(
 
 
 @router.delete("/{business_id}/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 def delete_invoice(
+    request: Request,
     business_id: UUID,
     invoice_id: UUID,
     db: Session = Depends(get_db),

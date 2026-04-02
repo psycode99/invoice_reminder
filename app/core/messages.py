@@ -15,3 +15,6 @@ MISSING_STATE = "Missing State"
 
 MISSING_SIGNATURE = "Missing Intuit Signature"
 INVALID_SIGNATURE = "Invalid Intuit Signature"
+
+INTEGRATION_NOT_FOUND = "Integration Not Found"
+INTEGRATION_CONNECTION_ALREADY_EXISTS = "Integration Connection Already Exists"

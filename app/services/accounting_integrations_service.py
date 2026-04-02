@@ -1,15 +1,39 @@
 from uuid import UUID
-from fastapi import Request
+from fastapi import HTTPException, Request, status
 from sqlalchemy.orm import Session
 from loguru import logger
+from app.core.messages import INTEGRATION_CONNECTION_ALREADY_EXISTS
 from app.services.accounting_integrations.base import AccountingIntegrations
+from app.db.models import AccountingIntegration
 
 
 class AccountingIntegrationService:
     def __init__(self, integrations: dict[str, AccountingIntegrations]):
         self.integrations = integrations
 
-    def get_auth_url(self, integration_name: str, state):
+    def get_auth_url(
+        self, integration_name: str, state, business_id: UUID, db: Session
+    ):
+        integration_exists = (
+            db.query(AccountingIntegration)
+            .filter(
+                AccountingIntegration.business_id == business_id,
+                AccountingIntegration.provider == integration_name,
+                AccountingIntegration.connected == True
+            )
+            .first()
+        )
+
+        if integration_exists:
+            logger.warning(
+                "Accounting Integration Connection Already Exists",
+                business_id=str(business_id),
+                provider=str(integration_name),
+            )
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=INTEGRATION_CONNECTION_ALREADY_EXISTS,
+            )
         service = self.integrations.get(integration_name)
         logger.info("Fetching Authorization URL", integration=integration_name)
         return service.get_auth_url(state=state)
