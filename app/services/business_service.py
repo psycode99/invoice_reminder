@@ -3,7 +3,7 @@ from fastapi import HTTPException, Response, status
 from sqlalchemy.orm import Session
 from app.core.messages import BUSINESS_NOT_FOUND, NO_BUSINESSES_FOUND, USER_UNAUTHORIZED
 from app.db.models.business import Business
-from loguru import logger
+from app.core.logger_instance import fastapi_logger as logger
 
 from app.helpers.sentry_helpers.sentry_business_helper import (
     attach_business_full_context,

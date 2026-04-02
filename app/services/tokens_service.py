@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from app.core.messages import REFRESH_TOKEN_NOT_FOUND
 from app.core.security import create_refresh_token, decode_jwt, hash_token
 from app.db.models.refresh_tokens import RefreshToken
-from loguru import logger
+from app.core.logger_instance import fastapi_logger as logger
 from fastapi import HTTPException, status
 from datetime import datetime, timezone
 

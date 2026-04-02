@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 from intuitlib.client import AuthClient
-from loguru import logger
+from app.core.logger_instance import celery_logger as logger
 from quickbooks.objects import Invoice
 from quickbooks import QuickBooks
 from app.db.models.accounting_integration import AccountingIntegration

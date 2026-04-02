@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from loguru import logger
+from app.core.logger_instance import celery_logger as logger
 import sentry_sdk
 from sqlalchemy.dialects.postgresql import insert
 from app.db.models.accounting_integration import AccountingIntegration

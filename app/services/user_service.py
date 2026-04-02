@@ -3,7 +3,7 @@ from fastapi import HTTPException, Response, status
 from app.core.messages import USER_NOT_FOUND, USER_UNAUTHORIZED
 from app.db.models.users import User
 from sqlalchemy.orm import Session
-from loguru import logger
+from app.core.logger_instance import fastapi_logger as logger
 
 from app.helpers.sentry_helpers.sentry_user_helper import attach_user_context
 

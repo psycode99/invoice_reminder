@@ -1,7 +1,8 @@
 import uuid
 from fastapi import Request
-from loguru import logger
 from sentry_sdk import configure_scope
+
+from loguru import logger as base_logger
 
 async def logging_middleware(request: Request, call_next):
     request_id = str(uuid.uuid4())
@@ -11,15 +12,17 @@ async def logging_middleware(request: Request, call_next):
     with configure_scope() as scope:
         scope.set_tag("request_id", request_id)
 
-    with logger.contextualize(
+    logger = base_logger.bind(
+        process="fastapi",
         request_id=request_id,
         method=request.method,
         path=request.url.path,
-    ):
-        logger.info("Incoming request")
+    )
 
-        response = await call_next(request)
+    logger.info("Incoming request")
 
-        logger.info("Request completed", status_code=response.status_code)
+    response = await call_next(request)
 
-        return response
+    logger.info("Request completed", status_code=response.status_code)
+
+    return response

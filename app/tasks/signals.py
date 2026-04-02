@@ -1,4 +1,4 @@
-from loguru import logger
+from app.core.logger_instance import celery_logger as logger
 from celery.signals import task_failure, task_prerun, task_postrun
 
 @task_prerun.connect

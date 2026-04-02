@@ -1,5 +1,5 @@
 from uuid import UUID
-from loguru import logger
+from app.core.logger_instance import celery_logger as logger
 import sentry_sdk
 from sqlalchemy import and_, or_, select
 from app.core.constants import MAX_REMINDERS

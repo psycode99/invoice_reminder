@@ -4,13 +4,13 @@ import logging
 from app.core.config import settings
 from celery.schedules import crontab
 from celery.signals import setup_logging
-import sys
-import colorama
+
 from sentry_sdk.integrations.celery import CeleryIntegration
 import sentry_sdk
+from app.core.logging import setup_logger
+from loguru import logger as base_logger
 
 
-logger.remove()
 
 sentry_sdk.init(
     dsn=settings.sentry_dsn,
@@ -18,41 +18,8 @@ sentry_sdk.init(
     traces_sample_rate=1.0
 )
 
-
-def console_formatter(record):
-    # Ensure request_id exists to avoid KeyError
-    record["extra"].setdefault("request_id", "-")
-    time = record["time"].strftime("%Y-%m-%d %H:%M:%S")
-    level = record["level"].name
-    msg = record["message"]
-    return f"{time} | {level} | {record['extra']['request_id']} | {msg}\n"
-
-
-colorama.init()
-
-logger.remove()
-logger.add(
-    sys.stdout,
-    level="INFO",
-    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level:<7}</level> | <cyan>{extra[request_id]}</cyan> | <level>{message}</level>",
-    colorize=True,
-    backtrace=True,
-    diagnose=False,
-    enqueue=True,
-)
-
-logger.add(
-    "logs/celery.log",
-    level="INFO",
-    rotation="20 MB",
-    retention="14 days",
-    enqueue=True,
-    serialize=True,  # JSON for structured logging
-)
-
-
-logger = logger.bind(request_id="-")
-
+setup_logger()
+logger = base_logger.bind(process="celery", request_id="-")
 
 class InterceptHandler(logging.Handler):
     def emit(self, record):

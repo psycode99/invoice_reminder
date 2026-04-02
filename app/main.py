@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 
 from app.middleware.rate_limiting_middleware import attach_user
 
-logger = setup_logger()
+logger = setup_logger().bind(process="fastapi")
 
 sentry_sdk.init(
     dsn=settings.sentry_dsn,

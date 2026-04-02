@@ -21,7 +21,7 @@ from app.db.models.accounting_integration import AccountingIntegration
 import hmac
 import hashlib
 import base64
-from loguru import logger
+from app.core.logger_instance import fastapi_logger as logger
 from app.tasks.invoice_webhooks_tasks import invoice_webhooks_qbo
 
 

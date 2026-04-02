@@ -8,8 +8,7 @@ from app.core.messages import (
 )
 from app.services.accounting_integrations.base import AccountingIntegrations
 from app.db.models import AccountingIntegration
-from app.core.config import settings
-
+from app.core.logger_instance import fastapi_logger as logger
 
 class AccountingIntegrationService:
     def __init__(self, integrations: dict[str, AccountingIntegrations]):

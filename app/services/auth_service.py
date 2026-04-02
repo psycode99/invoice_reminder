@@ -4,7 +4,7 @@ from app.core.security import create_access_token, create_refresh_token, decode_
 from app.services.oauth.base import OauthProvider
 from app.db.models.users import User
 from sqlalchemy.orm import Session
-from loguru import logger
+from app.core.logger_instance import fastapi_logger as logger
 
 
 class AuthService:

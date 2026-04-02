@@ -1,29 +1,38 @@
-import sys
 from loguru import logger
-
+import sys
 
 def setup_logger():
-    logger.remove()  # remove default handler
+    logger.remove()
 
-    # Console (pretty for development)
+    def patcher(record):
+        record["extra"].setdefault("process", "unknown")
+        record["extra"].setdefault("request_id", "-")
+
+    logger.configure(patcher=patcher)
+
     logger.add(
         sys.stdout,
         level="DEBUG",
-        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <7}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-        colorize=True,
-        backtrace=True,
-        diagnose=True,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+               "<level>{level:<7}</level> | "
+               "<cyan>{extra[process]}</cyan> | "
+               "<cyan>{extra[request_id]}</cyan> | "
+               "<level>{message}</level>",
         enqueue=True,
     )
 
-    # File (structured JSON for production / Datadog)
     logger.add(
         "logs/app.log",
-        level="INFO",
-        rotation="10 MB",
-        retention="7 days",
-        compression="zip",
-        serialize=True,  # THIS makes it JSON
+        filter=lambda r: r["extra"]["process"] == "fastapi",
+        serialize=True,
+        enqueue=True,
+    )
+
+    logger.add(
+        "logs/celery.log",
+        filter=lambda r: r["extra"]["process"] == "celery",
+        serialize=True,
+        enqueue=True,
     )
 
     return logger

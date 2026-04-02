@@ -9,7 +9,7 @@ from app.helpers.sentry_helpers.sentry_invoice_helper import (
     attach_invoice_full_context,
 )
 from app.tasks.reminder_tasks import send_invoice_issued_task
-from loguru import logger
+from app.core.logger_instance import fastapi_logger as logger
 
 
 class InvoiceService:
