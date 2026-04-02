@@ -34,6 +34,7 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
                 .filter(
                     AccountingIntegration.company_id == realm_id,
                     AccountingIntegration.provider == "qbo",
+                    AccountingIntegration.connected == True,
                 )
                 .first()
             )

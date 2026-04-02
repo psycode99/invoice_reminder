@@ -28,6 +28,7 @@ def sync_qbo_invoices(
                 AccountingIntegration.provider == "qbo",
                 AccountingIntegration.id == accounting_integration_id,
                 AccountingIntegration.business_id == business_id,
+                AccountingIntegration.connected == True,
             )
             .first()
         )

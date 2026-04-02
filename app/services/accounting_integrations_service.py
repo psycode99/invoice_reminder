@@ -2,9 +2,13 @@ from uuid import UUID
 from fastapi import HTTPException, Request, status
 from sqlalchemy.orm import Session
 from loguru import logger
-from app.core.messages import INTEGRATION_CONNECTION_ALREADY_EXISTS
+from app.core.messages import (
+    INTEGRATION_CONNECTION_ALREADY_EXISTS,
+    INTEGRATION_NOT_FOUND,
+)
 from app.services.accounting_integrations.base import AccountingIntegrations
 from app.db.models import AccountingIntegration
+from app.core.config import settings
 
 
 class AccountingIntegrationService:
@@ -19,12 +23,17 @@ class AccountingIntegrationService:
             .filter(
                 AccountingIntegration.business_id == business_id,
                 AccountingIntegration.provider == integration_name,
-                AccountingIntegration.connected == True
             )
             .first()
         )
 
-        if integration_exists:
+        if not integration_exists:
+            service = self.integrations.get(integration_name)
+            logger.info("Fetching Authorization URL", integration=integration_name)
+            url = service.get_auth_url(state=state)
+            return {"url": url}
+
+        if integration_exists.connected:
             logger.warning(
                 "Accounting Integration Connection Already Exists",
                 business_id=str(business_id),
@@ -34,9 +43,15 @@ class AccountingIntegrationService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail=INTEGRATION_CONNECTION_ALREADY_EXISTS,
             )
-        service = self.integrations.get(integration_name)
-        logger.info("Fetching Authorization URL", integration=integration_name)
-        return service.get_auth_url(state=state)
+        else:
+            logger.info(
+                "Reconnecting Preexisting Connection",
+                business_id=str(business_id),
+                provider=str(integration_name),
+            )
+            integration_exists.connected = True
+            db.commit()
+            return {"message": "Reconnection Successful"}
 
     def handle_callback(self, integration_name: str, request: Request, db: Session):
         service = self.integrations.get(integration_name)
@@ -67,3 +82,32 @@ class AccountingIntegrationService:
         service = self.integrations.get(integration_name)
         logger.info("Handling webhooks", integration=integration_name)
         return service.webhooks_handler(request=request)
+
+    def disconnect(self, integration_name: str, business_id: UUID, db: Session):
+        integration_exists = (
+            db.query(AccountingIntegration)
+            .filter(
+                AccountingIntegration.business_id == business_id,
+                AccountingIntegration.provider == integration_name,
+                AccountingIntegration.connected == True,
+            )
+            .first()
+        )
+
+        if not integration_exists:
+            logger.warning(
+                "Accounting Integration Connection Does Not Exist",
+                business_id=str(business_id),
+                provider=str(integration_name),
+            )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=INTEGRATION_NOT_FOUND
+            )
+
+        service = self.integrations.get(integration_name)
+        logger.info(
+            "Disconnecting Integration",
+            integration=integration_name,
+            business_id=str(business_id),
+        )
+        return service.disconnect(business_id=business_id, db=db)

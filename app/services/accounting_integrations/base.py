@@ -21,3 +21,7 @@ class AccountingIntegrations(ABC):
     @abstractmethod
     def webhooks_handler(self, request: Request):
         pass
+
+    @abstractmethod
+    def disconnect(self, business_id: UUID, db: Session):
+        pass

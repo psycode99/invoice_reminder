@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     qbo_verifier_token: str
     sentry_dsn: str
     session_middleware_key: str
+    base_app_url: str
 
     class Config:
         env_file = ".env"

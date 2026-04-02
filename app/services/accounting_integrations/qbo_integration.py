@@ -38,7 +38,7 @@ class QuickBooksOnlineIntegration(AccountingIntegrations):
         url = auth_client.get_authorization_url(
             scopes=[Scopes.ACCOUNTING], state_token=state
         )
-        return {"url": url}
+        return url
 
     def handle_callback(self, request: Request, db: Session):
         code = request.query_params.get("code")
@@ -114,3 +114,18 @@ class QuickBooksOnlineIntegration(AccountingIntegrations):
         return JSONResponse(
             status_code=status.HTTP_200_OK, content={"status": "received"}
         )
+
+    def disconnect(self, business_id, db):
+        integration = (
+            db.query(AccountingIntegration)
+            .filter(
+                AccountingIntegration.business_id == business_id,
+                AccountingIntegration.provider == "qbo",
+                AccountingIntegration.connected == True
+            )
+            .first()
+        )
+
+        integration.connected = False
+        db.commit()
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Disconnection Successful"})

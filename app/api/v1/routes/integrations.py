@@ -19,21 +19,36 @@ business_service = BusinessService()
 router = APIRouter(prefix="/v1/integrations", tags=["Integrations"])
 
 
-@router.get("/{integration_name}/connect", status_code=status.HTTP_202_ACCEPTED)
-@limiter.limit("10/minute")
-def connect_account(request: Request, integration_name: str, business_id: UUID, db: Session = Depends(get_db)):
+def check_integrations(integration_name):
     integrations = [i for i in integration_service.integrations.keys()]
 
     if integration_name not in integrations:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INTEGRATION_NOT_FOUND)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=INTEGRATION_NOT_FOUND
+        )
+
+
+@router.get("/{integration_name}/connect", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit("10/minute")
+def connect_account(
+    request: Request,
+    integration_name: str,
+    business_id: UUID,
+    db: Session = Depends(get_db),
+):
+    check_integrations(integration_name)
 
     business_state = encode_business_state(str(business_id))
-
-    return RedirectResponse(
-        url=integration_service.get_auth_url(
-            integration_name=integration_name, state=business_state, business_id=business_id, db=db
-        ).get("url")
+    resp = integration_service.get_auth_url(
+        integration_name=integration_name,
+        state=business_state,
+        business_id=business_id,
+        db=db,
     )
+
+    if "url" in resp:
+        return RedirectResponse(resp.get("url"))
+    return resp
 
 
 @router.get("/{integration_name}/callback", status_code=status.HTTP_200_OK)
@@ -55,10 +70,7 @@ def sync_invoices(
     db: Session = Depends(get_db),
     # current_user=Depends(get_current_user_dependency),
 ):
-    integrations = [i for i in integration_service.integrations.keys()]
-
-    if integration_name not in integrations:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INTEGRATION_NOT_FOUND)
+    check_integrations(integration_name)
 
     # business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
     return integration_service.sync_invoices(
@@ -74,10 +86,23 @@ async def webhooks_handler(
     integration_name: str,
     request: Request,
 ):
-    integrations = [i for i in integration_service.integrations.keys()]
+    check_integrations(integration_name)
 
-    if integration_name not in integrations:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=INTEGRATION_NOT_FOUND)
     return await integration_service.webhooks_handler(
         integration_name=integration_name, request=request
+    )
+
+
+@router.get("/{integration_name}/disconnect", status_code=status.HTTP_200_OK)
+@limiter.limit("5/minute")
+def disconnect(
+    request: Request,
+    integration_name: str,
+    business_id: UUID,
+    db: Session = Depends(get_db),
+):
+    check_integrations(integration_name)
+
+    return integration_service.disconnect(
+        integration_name=integration_name, business_id=business_id, db=db
     )
