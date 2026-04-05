@@ -51,7 +51,7 @@ async def oauth_callback(
     return {"access_token": access_token, "type": "bearer"}
 
 
-@router.post("/refresh", status_code=status.HTTP_200_OK)
+@router.get("/refresh", status_code=status.HTTP_200_OK)
 @limiter.limit("5/minute")
 def refresh_token(
     request: Request,
