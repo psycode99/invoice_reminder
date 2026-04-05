@@ -4,12 +4,10 @@ import logging
 from app.core.config import settings
 from celery.schedules import crontab
 from celery.signals import setup_logging
-
 from sentry_sdk.integrations.celery import CeleryIntegration
 import sentry_sdk
 from app.core.logging import setup_logger
 from loguru import logger as base_logger
-
 
 
 sentry_sdk.init(

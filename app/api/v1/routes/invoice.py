@@ -1,13 +1,16 @@
+import json
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate
 
-
+from app.core.redis import redis_client
 from app.api.v1.dependencies import get_db
 from app.core.security import get_current_user_dependency
+from app.helpers.idempotency import idempotency_checker
 from app.schemas.invoice_schema import InvoiceCreate, InvoiceResponse, InvoiceUpdate
 from app.services.business_service import BusinessService
 from app.services.invoice_service import InvoiceService
@@ -24,7 +27,7 @@ business_service = BusinessService()
     response_model=InvoiceResponse,
 )
 @limiter.limit("20/minute")
-def create_invoice(
+async def create_invoice(
     request: Request,
     invoice_data: InvoiceCreate,
     business_id: UUID,
@@ -32,12 +35,32 @@ def create_invoice(
     current_user=Depends(get_current_user_dependency),
 ):
     business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
-    return invoice_service.create_invoice(
+
+    idemp_resp = await idempotency_checker(
+        request, redis_client, current_user.id
+    )
+
+    if idemp_resp.get("status") == "cached":
+        return idemp_resp.get("response")
+
+    resp = invoice_service.create_invoice(
         invoice_data=invoice_data.model_dump(mode="json"),
         business_id=business_id,
         db=db,
         request=request,
     )
+
+    data = jsonable_encoder(resp)
+
+    await redis_client.set(
+        idemp_resp.get("redis_key"),
+        json.dumps(
+            {"status": "completed", "payload_hash": idemp_resp.get("hashed_body"), "response": data}
+        ),
+        ex=86400,
+    )
+
+    return resp
 
 
 @router.get(
@@ -103,6 +126,7 @@ def get_invoices(
     current_user=Depends(get_current_user_dependency),
 ):
     business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
+
     query = invoice_service.get_invoices_for_business(business_id=business_id, db=db)
     return paginate(query, params)
 

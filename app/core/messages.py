@@ -18,3 +18,8 @@ INVALID_SIGNATURE = "Invalid Intuit Signature"
 
 INTEGRATION_NOT_FOUND = "Integration Not Found"
 INTEGRATION_CONNECTION_ALREADY_EXISTS = "Integration Connection Already Exists"
+
+IDEMPOTENCY_KEY_REQUIRED = "Idempotency Key Required"
+PAYLOAD_MISMATCH = "Payload Hash Mismatch"
+
+PROCESS_ALREADY_EXIST = "Request is Processing"
