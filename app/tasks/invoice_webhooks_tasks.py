@@ -72,7 +72,7 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
             result = db.execute(stmt)
 
             if result.rowcount == 0:
-                return
+                continue
 
             auth_client = AuthClient(
                 client_id=settings.qbo_client_id,
