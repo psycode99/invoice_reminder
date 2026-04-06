@@ -57,14 +57,14 @@ async def create_business(
 
 @router.get("/{id}", status_code=status.HTTP_200_OK, response_model=BusinessResponse)
 @limiter.limit("100/minute")
-def get_business(
+async def get_business(
     request: Request,
     id: UUID,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
 ):
 
-    return business_service.get_business(id=id, db=db, owner_id=current_user.id)
+    return await business_service.get_business(id=id, db=db, owner_id=current_user.id)
 
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=Page[BusinessResponse])
@@ -81,14 +81,14 @@ def get_businesses(
 
 @router.put("/{id}", status_code=status.HTTP_200_OK, response_model=BusinessResponse)
 @limiter.limit("20/minute")
-def update_business(
+async def update_business(
     request: Request,
     business_data: BusinessUpdate,
     id: UUID,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
 ):
-    return business_service.update_business(
+    return await business_service.update_business(
         id=id,
         owner_id=current_user.id,
         db=db,
@@ -98,10 +98,10 @@ def update_business(
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit("5/minute")
-def delete_business(
+async def delete_business(
     request: Request,
     id: UUID,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
 ):
-    return business_service.delete_business(id=id, owner_id=current_user.id, db=db)
+    return await business_service.delete_business(id=id, owner_id=current_user.id, db=db)

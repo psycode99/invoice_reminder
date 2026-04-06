@@ -34,7 +34,7 @@ async def create_invoice(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
 ):
-    business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
+    await business_service.validate_user_owns_business(business_id=business_id, db=db, owner_id=current_user.id)
 
     idemp_resp = await idempotency_checker(
         request, redis_client, current_user.id
@@ -69,7 +69,7 @@ async def create_invoice(
     response_model=Page[InvoiceResponse],
 )
 @limiter.limit("100/minute")
-def search_invoice(
+async def search_invoice(
     request: Request,
     business_id: UUID,
     params: Params = Depends(),
@@ -81,7 +81,7 @@ def search_invoice(
     current_user=Depends(get_current_user_dependency),
 ):
 
-    business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
+    await business_service.validate_user_owns_business(business_id=business_id, db=db, owner_id=current_user.id)
 
     query = invoice_service.search_invoice(
         invoice_number=invoice_number,
@@ -101,14 +101,14 @@ def search_invoice(
     response_model=InvoiceResponse,
 )
 @limiter.limit("100/minute")
-def get_invoice(
+async def get_invoice(
     request: Request,
     business_id: UUID,
     invoice_id: UUID,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
 ):
-    business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
+    await business_service.validate_user_owns_business(business_id=business_id, db=db, owner_id=current_user.id)
     return invoice_service.get_invoice(id=invoice_id, business_id=business_id, db=db)
 
 
@@ -118,14 +118,14 @@ def get_invoice(
     response_model=Page[InvoiceResponse],
 )
 @limiter.limit("100/minute")
-def get_invoices(
+async def get_invoices(
     request: Request,
     business_id: UUID,
     params: Params = Depends(),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
 ):
-    business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
+    await business_service.validate_user_owns_business(business_id=business_id, db=db, owner_id=current_user.id)
 
     query = invoice_service.get_invoices_for_business(business_id=business_id, db=db)
     return paginate(query, params)
@@ -137,7 +137,7 @@ def get_invoices(
     response_model=InvoiceResponse,
 )
 @limiter.limit("20/minute")
-def update_invoice(
+async def update_invoice(
     request: Request,
     invoice_data: InvoiceUpdate,
     business_id: UUID,
@@ -145,7 +145,7 @@ def update_invoice(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
 ):
-    business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
+    await business_service.validate_user_owns_business(business_id=business_id, db=db, owner_id=current_user.id)
     return invoice_service.update_invoice(
         id=invoice_id,
         business_id=business_id,
@@ -156,12 +156,12 @@ def update_invoice(
 
 @router.delete("/{business_id}/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit("5/minute")
-def delete_invoice(
+async def delete_invoice(
     request: Request,
     business_id: UUID,
     invoice_id: UUID,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_dependency),
 ):
-    business_service.get_business(id=business_id, db=db, owner_id=current_user.id)
+    await business_service.validate_user_owns_business(business_id=business_id, db=db, owner_id=current_user.id)
     return invoice_service.delete_invoice(id=invoice_id, business_id=business_id, db=db)
