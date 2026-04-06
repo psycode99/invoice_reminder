@@ -16,7 +16,15 @@ from app.core.config import settings
 from sqlalchemy.orm import selectinload
 
 
-@celery_app.task(bind=True, max_retries=3, base=SentryHelper)
+@celery_app.task(
+    bind=True,
+    max_retries=3,
+    base=SentryHelper,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    retry_jitter=True,
+)
 def send_invoice_issued_task(self, invoice_id: UUID, request_id):
     db = SessionLocal()
     try:

@@ -16,7 +16,15 @@ from quickbooks.objects import Invoice
 from dateutil import parser
 
 
-@celery_app.task(bind=True, max_retries=3, base=SentryHelper)
+@celery_app.task(
+    bind=True,
+    max_retries=3,
+    base=SentryHelper,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    retry_jitter=True,
+)
 def invoice_webhooks_qbo(self, payload: list[dict], request_id):
     db = SessionLocal()
     try:
@@ -118,7 +126,6 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
 
                 if not inv.BillEmail or not getattr(inv.BillEmail, "Address", None):
                     continue
-                
 
                 if inv.Balance is None:
                     logger.error(

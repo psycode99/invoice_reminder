@@ -15,7 +15,15 @@ from dateutil import parser
 import sentry_sdk
 
 
-@celery_app.task(bind=True, max_retries=3, base=SentryHelper)
+@celery_app.task(
+    bind=True,
+    max_retries=3,
+    base=SentryHelper,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    retry_jitter=True,
+)
 def sync_qbo_invoices(
     self, business_id: UUID, accounting_integration_id: UUID, request_id
 ):
