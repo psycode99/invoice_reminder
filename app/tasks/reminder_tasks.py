@@ -1,9 +1,10 @@
 from uuid import UUID
 from app.core.logger_instance import celery_logger as logger
 import sentry_sdk
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, or_, select, text
 from app.core.constants import MAX_REMINDERS
 from app.db.models.invoice import Invoice
+from app.helpers.pg_lock_hash import lock_key
 from app.helpers.sentry_helpers.sentry_celery_helper import SentryHelper
 from app.mail.build_mail import build_invoice_email
 from app.mail.email_escalator import determine_escalation
@@ -28,6 +29,17 @@ from sqlalchemy.orm import selectinload
 def send_invoice_issued_task(self, invoice_id: UUID, request_id):
     db = SessionLocal()
     try:
+        # pg advisory lock mechanism in case multiple workers
+        lock_id = f"invoice_issued:{invoice_id}"
+        lock_hash = lock_key(lock_id)
+
+        acquired = db.execute(
+            text("SELECT pg_try_advisory_xact_lock(:id)"), {"id": lock_hash}
+        ).scalar_one()
+
+        if not acquired:
+            return
+        
         stmt = (
             select(Invoice)
             .options(selectinload(Invoice.business))
@@ -70,7 +82,6 @@ def send_invoice_issued_task(self, invoice_id: UUID, request_id):
         raise self.retry(exc=e, countdown=60)
 
     finally:
-
         db.close()
 
 
@@ -78,6 +89,17 @@ def send_invoice_issued_task(self, invoice_id: UUID, request_id):
 def send_invoice_reminder_task(self, invoice_id: UUID):
     db = SessionLocal()
     try:
+        # pg advisory lock mechanism in case multiple workers
+        lock_id = f"invoice_reminder:{invoice_id}"
+        lock_hash = lock_key(lock_id)
+
+        acquired = db.execute(
+            text("SELECT pg_try_advisory_xact_lock(:id)"), {"id": lock_hash}
+        ).scalar_one()
+
+        if not acquired:
+            return
+
         stmt = (
             select(Invoice)
             .options(selectinload(Invoice.business))
@@ -136,7 +158,6 @@ def send_invoice_reminder_task(self, invoice_id: UUID):
         raise self.retry(exc=e, countdown=60)
 
     finally:
-
         db.close()
 
 

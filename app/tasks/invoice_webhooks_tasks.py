@@ -1,4 +1,6 @@
 from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import text
 from app.core.logger_instance import celery_logger as logger
 import sentry_sdk
 from sqlalchemy.dialects.postgresql import insert
@@ -6,6 +8,7 @@ from app.db.models.accounting_integration import AccountingIntegration
 from app.db.models import invoice
 from app.db.models.webhook_events import WebhookEvent
 from app.helpers.errs import MissingBalanceException
+from app.helpers.pg_lock_hash import lock_key
 from app.helpers.sentry_helpers.sentry_celery_helper import SentryHelper
 from app.tasks.celery_app import celery_app
 from app.db.session import SessionLocal
@@ -62,6 +65,17 @@ def invoice_webhooks_qbo(self, payload: list[dict], request_id):
                 integration="qbo",
                 company_id=realm_id,
             )
+
+            # pg advisory lock mechanism in case multiple workers
+            lock_id = f"webhooks_event_qbo:{event.get("id")}"
+            lock_hash = lock_key(lock_id)
+
+            acquired = db.execute(
+                text("SELECT pg_try_advisory_xact_lock(:id)"), {"id": lock_hash}
+            ).scalar_one()
+
+            if not acquired:
+                continue
 
             stmt = (
                 insert(WebhookEvent)

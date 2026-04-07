@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 from intuitlib.client import AuthClient
+from sqlalchemy import text
 from app.core.logger_instance import celery_logger as logger
 from quickbooks.objects import Invoice
 from quickbooks import QuickBooks
@@ -8,6 +9,7 @@ from app.db.models.accounting_integration import AccountingIntegration
 from app.db.session import SessionLocal
 from app.db.models import invoice
 from sqlalchemy.dialects.postgresql import insert
+from app.helpers.pg_lock_hash import lock_key
 from app.helpers.sentry_helpers.sentry_celery_helper import SentryHelper
 from app.tasks.celery_app import celery_app
 from app.core.config import settings
@@ -29,6 +31,17 @@ def sync_qbo_invoices(
 ):
     db = SessionLocal()
     try:
+
+        # pg advisory lock mechanism in case multiple workers
+        lock_id = f"invoice_sync:{business_id}"
+        lock_hash = lock_key(lock_id)
+
+        acquired = db.execute(
+            text("SELECT pg_try_advisory_xact_lock(:id)"), {"id": lock_hash}
+        ).scalar_one()
+
+        if not acquired:
+            return
 
         integration = (
             db.query(AccountingIntegration)
